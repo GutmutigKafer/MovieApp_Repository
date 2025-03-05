@@ -81,7 +81,7 @@ body {
     padding: 10px;
     display: block;
     text-decoration: none;
-    transition: background 0.3s;
+    transition: background-color 0.3s;
 }
 
 .dropdownMenu a:hover {
@@ -180,6 +180,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2; /* Limit title to 2 lines */
     -webkit-box-orient: vertical;
     text-shadow: #252222c1 0px 0px 10px;
