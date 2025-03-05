@@ -1,6 +1,6 @@
 
-import { movies } from "./moviesList.js";
-import { allComments, addCommentToStorage } from './commentsFunctions.js';
+import { movies } from "./movies-list.js";
+import { allComments, addCommentToStorage } from './comments.js';
 
 
 /* Dropdown menu functionality setup */
