@@ -208,6 +208,7 @@ const { toggleDetails, closeDetails } = movieDetailsPanel();
 window.closeDetails = closeDetails; 
 
 
+// Rating functions
 
 document.addEventListener("DOMContentLoaded", function () {
     let stars = document.querySelectorAll(".star"); /*Get all the star elements */
