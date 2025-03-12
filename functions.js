@@ -3,30 +3,98 @@ import { movies } from "./movies-list.js";
 import { allComments, addCommentToStorage } from './comments.js';
 
 
-/* Dropdown menu functionality setup */
-function setupDropdown() {
-    let dropdownButton = document.querySelector(".dropdownContent");
-    let dropdownMenu = document.querySelector(".dropdownMenu");
+//! JS2 WEEK 2 ADDED
+//* SWITCH VIEW FUNCTION
+let currentView = 'grid';
+const gridButton = document.getElementById('grid-button');
+const listButton = document.getElementById('list-button');
+const cardContainer = document.getElementById('card-container');
+const listContainer = document.getElementById('list-container');
+function showView(view) {
+    currentView = view;
+    if (view === 'grid') {
+        cardContainer.classList.add('show');
+        listContainer.classList.remove('show');
+    } else if (view === 'list') {
+        listContainer.classList.add('show');
+        cardContainer.classList.remove('show');
+    }
+   if (view === 'list') {
+      generateGenreFilters();
+      renderMovieList();
+    }
+  }
+  gridButton.addEventListener('click', () => showView('grid'));
+listButton.addEventListener('click', () => showView('list'));
 
-   
-    dropdownButton.addEventListener("click", function () {
-        if (dropdownMenu.style.display === "block") {
-            dropdownMenu.style.display = "none"; // Hide the menu
-        } else {
-            dropdownMenu.style.display = "block"; // Show the menu
-        }
-    });
+//Start page with the grid view
+cardContainer.classList.add('show');
 
-    /* If the user clicks anywhere outside the dropdown, close the dropdown */
-    document.addEventListener("click", function (event) {
-        if (!dropdownButton.contains(event.target) && !dropdownMenu.contains(event.target)) {
-            dropdownMenu.style.display = "none";
-        }
-    });
+//! JS2 WEEK 2 ADDED
+//* GENRE FILTERS
+
+let selectedGenres = new Set();
+function generateGenreFilters() {
+
+    //Find and create filters from all unique genres 
+    const genreContainer = document.getElementById('genre-filters');
+    const allGenres = [... new Set(movies.flatMap(movie => movie.genres))];
+
+    genreContainer.innerHTML = allGenres.map(genreItem => `
+        <div class="genre-filter" data-genre="${genreItem}">${genreItem}</div>`).join('');
+
+        const genreFilters  = document.querySelectorAll('.genre-filter');
+        genreFilters.forEach(filter => {
+            filter.addEventListener('click', () => {
+                const genre = filter.dataset.genre;
+                toggleGenreFilter(genre);
+            })
+        })
+}
+//! JS2 WEEK 2 ADDED
+function toggleGenreFilter(genre) {
+    const genreTag = document.querySelector(`[data-genre="${genre}"]`)
+   if (genreTag) {
+    genreTag.classList.toggle('active');
+
+    if (selectedGenres.has(genre)) {
+        selectedGenres.delete(genre);
+    } else {
+        selectedGenres.add(genre);
+    }
+    renderMovieList();
+   } else {
+    console.log(`Element with data-genre="${genre}" not found`);
+}
 }
 
-setupDropdown();
+//! JS2 WEEK 2 ADDED
+//* MOVIE LIST
 
+function renderMovieList() {
+    const container = document.getElementById('movie-list-items');
+
+    const filteredMovies = movies.filter(movie => {
+        const matchesGenres = selectedGenres.size === 0 || 
+        [...selectedGenres].every(genre => movie.genres.includes(genre));
+        return matchesGenres;
+    });
+
+    container.innerHTML = filteredMovies.map(movie => `
+        <div class="movie-item">
+      <img src="${movie.poster_url}" alt="${movie.title}">
+      <div>
+        <h3>${movie.title} (${movie.movieYear})</h3>
+        <div class="genre-list">
+          ${movie.genres.map(genre => `
+            <span class="genre-tag">${genre}</span>
+          `).join('')}
+        </div>
+        <p>${movie.description.slice(0, 150)}...</p>
+      </div>
+    </div>`).join('');
+
+}
 
 //* MOVIES GRID
 
@@ -92,7 +160,7 @@ consoleGrid.forEach((row) => console.log(row.join(' ')));
 }
 
 
-//! Grouped all the Details functions under movieDetailsPanel()
+// Grouped all the Details functions under movieDetailsPanel()
 function movieDetailsPanel() {
     const movieDetails = document.getElementById('movie-details');
 
@@ -240,6 +308,139 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+//! JS2 WEEK 2 ADDED
+//*SEARCH FUNCTIONS
+
+let searchDiv = document.querySelector('.search');
+let searchInput = document.querySelector('.search .searchText');
+
+function searchFunction() {
+
+let searchDropdown = document.getElementById('search-dropdown');
+    // Hide the dropdown if the input is empty
+ if (searchInput.value.trim() === '') {
+     searchDropdown.style.display = 'none';
+        return;
+      }
+
+      // Get movies by title 
+let searchResults = [];
+let searchText = searchInput.value.trim();
+for (let i = 0; i < movies.length; i++) {
+    if (movies[i].title.toLowerCase().includes(searchText.toLowerCase())) {
+      searchResults.push(movies[i]);
+    }
+  }
+    console.log(`searchResults: ${searchResults.length}`);
+    searchResults.map(result => console.log(result.title));
+
+
+    //Create and populate the results dropdown
+if (!searchDropdown) {
+    searchDropdown = document.createElement('div');
+    searchDropdown.id = 'search-dropdown';
+    searchDiv.appendChild(searchDropdown);
+}
+searchDropdown.innerHTML = '';
+
+searchResults.forEach(result => {
+
+let resultItem = document.createElement('div');
+resultItem.classList.add('resultItem');
+
+let resultPoster = document.createElement('img');
+resultPoster.classList.add('resultPoster');
+resultPoster.src = result.poster_url;
+resultItem.appendChild(resultPoster);
+
+let resultTitle = document.createElement('span');
+resultTitle.classList.add('resultTitle');
+resultTitle.textContent = result.title;
+resultItem.appendChild(resultTitle);
+
+let resultYear = document.createElement('span');
+resultYear.classList.add('resultYear');
+resultYear.textContent = result.movieYear;
+resultItem.appendChild(resultYear);
+
+// Go to the result
+resultItem.addEventListener('click', () => goToMovie(result));
+searchDropdown.appendChild(resultItem);
+});
+
+//Show results if there are any
+if (searchResults.length > 0) {
+    searchDropdown.style.display = 'block';
+  } else {
+    searchDropdown.style.display = 'none';
+  }
+}
+
+//Show results when typing
+let timeoutResults = null;
+searchInput.addEventListener('input', () => {
+  clearTimeout(timeoutResults);
+  timeoutResults = setTimeout(searchFunction, 200);
+});
+
+//! JS2 WEEK 2 ADDED
+// Highlight the selected card
+function highlightCard(selectedCard) {
+    document.querySelectorAll('.highlighted').forEach(card => {
+        card.classList.remove('highlighted');
+    });
+
+    setTimeout(() => {
+    if (selectedCard) {
+        selectedCard.classList.add('highlighted');
+
+       
+        setTimeout(() => {
+            selectedCard.classList.remove('highlighted');
+        }, 1000);
+   
+    }
+}, 200);
+}
+//! JS2 WEEK 2 ADDED
+function goToMovie(result) {
+    const container = document.getElementById('card-container');
+
+    const selectedCard = [...container.children].find(card => 
+         card.querySelector('h2').textContent.trim() === result.title.trim()
+);
+
+    if (selectedCard) {
+        highlightCard(selectedCard);
+
+//Grid dimentions
+    const minX = Math.min(...movies.map(m => m.coordinates.x));
+    const minY = Math.min(...movies.map(m => m.coordinates.y));
+
+    const gridColumn = result.coordinates.x - minX + 1;
+    const gridRow = result.coordinates.y - minY + 1;
+
+    const cardWidth = 380;
+    const cardHeight = 620;
+    const columnGap = 20;
+    const rowGap = 30;
+
+    const cardX = (gridColumn - 1) * (cardWidth + columnGap);
+    const cardY = (gridRow - 1) * (cardHeight + rowGap);
+
+    const centerX = cardX + cardWidth / 2 - window.innerWidth / 2;
+    const centerY = cardY + cardHeight / 2 - window.innerHeight / 2;
+
+    container.scrollTo({
+        left: centerX,
+        top: centerY,
+        behavior: 'smooth'
+    });
+}
+    };
+
+
 
 
 //* SCREEN DRAG FUNCTIONS
