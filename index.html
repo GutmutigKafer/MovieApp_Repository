@@ -11,21 +11,11 @@
   <body>
     <!-- Navigation Bar -->
     <nav class="navigationBar">
-      <div class="appName">CineVerse</div>
+      <div class="appName"><span id ="name1">Movie</span><span id="name2">Matrix</span></div>
       <div class="menu">
-        <a href="#">Movies</a>
+        <a id="grid-button">Movies</a>
+        <a id="list-button">Genres</a>
         <a href="#">Trending</a>
-        <div class="dropdown">
-          <button class="dropdownContent">Genres</button>
-          <div class="dropdownMenu">
-            <a href="#">Action</a>
-            <a href="#">Comedy</a>
-            <a href="#">Drama</a>
-            <a href="#">Horror</a>
-            <a href="#">Romance</a>
-            <a href="#">Thriller</a>
-          </div>
-        </div>
       </div>
       <div class="search">
         <input
@@ -39,10 +29,21 @@
       </div>
     </nav>
    
-    <!-- Movies -->
+    <!-- Grid View -->
     <div id="card-container"></div>
+
+    <!-- List View -->
+     <div id="list-container" class="hidden">
+      <div class="filter-section">
+        <h3>Filter by Genre</h3>
+        <div id="genre-filters"></div>
+      </div>
+
+        <div id="movie-list-items"></div>
+      
+     </div>
   
-    <!-- Sliding Window -->
+    <!-- Movie Details -->
     <div id="movie-details" class="movie-details">
       <button class="close-btn" onclick="closeDetails()">
         <img width="30" height="30" src="https://img.icons8.com/metro/100/FFFFFF/multiply.png" alt="close-button"/>
