@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0" />
+    <link rel="stylesheet" href="styles.css" />
+
+    <title>Movie Application</title>
+    <link rel="text/html" href="app.css" />
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navigationBar">
+      <div class="appName">CineVerse</div>
+      <div class="menu">
+        <a href="#">Movies</a>
+        <a href="#">Trending</a>
+        <div class="dropdown">
+          <button class="dropdownContent">Genres</button>
+          <div class="dropdownMenu">
+            <a href="#">Action</a>
+            <a href="#">Comedy</a>
+            <a href="#">Drama</a>
+            <a href="#">Horror</a>
+            <a href="#">Romance</a>
+            <a href="#">Thriller</a>
+          </div>
+        </div>
+      </div>
+      <div class="search">
+        <input
+          type="text"
+          class="searchText"
+          placeholder="Search for a movie..."
+        />
+        <span class="searchIcon">
+          <img width="20" height="20" src="https://img.icons8.com/ios/100/737373/search--v1.png" alt="search--v1"/>
+        </span>
+      </div>
+    </nav>
+   
+    <!-- Movies -->
+    <div id="card-container"></div>
+  
+    <!-- Sliding Window -->
+    <div id="movie-details" class="movie-details">
+      <button class="close-btn" onclick="closeDetails()">
+        <img width="30" height="30" src="https://img.icons8.com/metro/100/FFFFFF/multiply.png" alt="close-button"/>
+      </button>
+      <img id="details-poster" src="" alt="Movie Poster" />
+      <h2 id="details-title"></h2>
+      <p id="details-year"></p>
+<!-- Star-rating -->
+  <div id="star-rating" class ="rating">
+  <span class="star" data-value="1">&#9733;</span>
+  <span class="star" data-value="2">&#9733;</span>
+  <span class="star" data-value="3">&#9733;</span>
+  <span class="star" data-value="4">&#9733;</span>
+  <span class="star" data-value="5">&#9733;</span>
+  </div>
+
+    <p id="details-description"></p>
+      <p id="details-genre"></p>
+      <p id="details-director"></p>
+      <p id="details-cast"></p>
+      <p id="details-price"></p>
+    </div>
+
+   
+
+    <script defer type="module" src="functions.js"></script>
+    <script defer type="module" src="comments.js"></script>
+    <script defer type="module" src="movies-list.js"></script>
+  </body>
+</html>
