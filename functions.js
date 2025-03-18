@@ -3,7 +3,6 @@ import { movies } from "./movies-list.js";
 import { allComments, addCommentToStorage } from './comments.js';
 
 
-//! JS2 WEEK 2 ADDED
 //* SWITCH VIEW FUNCTION
 let currentView = 'grid';
 const gridButton = document.getElementById('grid-button');
@@ -15,6 +14,7 @@ function showView(view) {
     if (view === 'grid') {
         cardContainer.classList.add('show');
         listContainer.classList.remove('show');
+        showCursor();
     } else if (view === 'list') {
         listContainer.classList.add('show');
         cardContainer.classList.remove('show');
@@ -30,7 +30,43 @@ listButton.addEventListener('click', () => showView('list'));
 //Start page with the grid view
 cardContainer.classList.add('show');
 
-//! JS2 WEEK 2 ADDED
+
+// Custom Cursor for Grid View
+const customCursor = document.createElement('div');
+customCursor.id = 'custom-cursor';
+
+const cursorImg = document.createElement('img');
+cursorImg.src = 'https://img.icons8.com/badges/100/FFFFFF/move.png';
+
+document.body.appendChild(customCursor);
+customCursor.appendChild(cursorImg);
+
+function showCursor() {
+    customCursor.classList.remove('fade-out');
+    customCursor.style.display = 'block';
+
+    //Add Fade In
+    setTimeout(() => {
+        customCursor.classList.add('fade-in');
+        }, 500);
+
+        // Fade out after 3 seconds
+        setTimeout(() => {
+            customCursor.classList.remove('fade-in');
+            customCursor.classList.add('fade-out');
+            
+            // Hide completely after fade-out
+            setTimeout(() => {
+                customCursor.style.display = 'none';
+            }, 500); 
+        }, 2500);
+
+   
+     
+}
+showCursor();
+
+
 //* GENRE FILTERS
 
 let selectedGenres = new Set();
@@ -51,7 +87,7 @@ function generateGenreFilters() {
             })
         })
 }
-//! JS2 WEEK 2 ADDED
+
 function toggleGenreFilter(genre) {
     const genreTag = document.querySelector(`[data-genre="${genre}"]`)
    if (genreTag) {
@@ -68,7 +104,7 @@ function toggleGenreFilter(genre) {
 }
 }
 
-//! JS2 WEEK 2 ADDED
+
 //* MOVIE LIST
 
 function renderMovieList() {
@@ -132,8 +168,29 @@ function displayMoviesGrid() {
         card.style.gridColumn = gridColumn;
         card.style.gridRow = gridRow;
 
-        //Click Listener
-        card.addEventListener('click', () => toggleDetails(movie));
+        //TimerGame selection logic
+        card.addEventListener('click', (event) => {
+            if (isGameActive) {
+            if (!selectedMovies.some(m => m.id === movie.id)) {
+                selectedMovies.push(movie);
+                updateSelectedMoviesList();
+            } 
+            //Prevent the details to open during the game
+                event.stopPropagation(); 
+                return;
+            }
+           
+            let isTimerDropdown = event.target.closest('.timer-dropdown');
+            if (!isTimerDropdown && !isGameActive) {
+                    timerDropdown.style.display = 'none'
+            } else if (!isTimerDropdown && isGameActive) {
+                setTimeout(() => {
+                    timerDropdown.style.display = 'none'}, 1000);
+            }
+
+           toggleDetails(movie);
+
+    });
         cardContainer.appendChild(card);
 
     });
@@ -157,25 +214,31 @@ consoleGrid.forEach((row) => console.log(row.join(' ')));
         const centerY = (cardContainer.scrollHeight - cardContainer.clientHeight) / 2;
         cardContainer.scrollTo(centerX, centerY);
     }, 100);
+    
 }
-
+let timerDropdown;
 
 // Grouped all the Details functions under movieDetailsPanel()
+const movieDetails = document.getElementById('movie-details');
 function movieDetailsPanel() {
-    const movieDetails = document.getElementById('movie-details');
+   
 
    /* Sliding window */
    function toggleDetails(movie) {
+    const currentMovieTitle = document.getElementById("details-title").textContent;
+    const isSameMovie =  currentMovieTitle === movie.title;
+
     if (movieDetails.classList.contains("show")) {
-        closeDetails(); // Close if already open
+        isSameMovie ? closeDetails() : openDetails(movie, movie.id);
     } else {
-        openDetails(movie, movie.id);
+    openDetails(movie, movie.id);
     }
 }
 
     /* Open sliding window */
     function openDetails(movie, currentMovieId) {
         movieDetails.classList.add("show");
+        movieDetails.scrollTop = 0; 
         document.getElementById("details-title").textContent = movie.title;
         document.getElementById("details-year").textContent = `${movie.movieYear}`;
         document.getElementById("details-genre").innerHTML = `<span class="bold">Genre:</span> ${movie.genres.join(", ") || ''}`;
@@ -255,17 +318,17 @@ commentForm.addEventListener('submit', (e) => {
 
     /* Close details when clicking outside the movie details panel */
     document.addEventListener('click', (event) => {
-        const clickedInsideDetails = movieDetails.contains(event.target);   // Did the user click inside the details?
-        const clickedOnCard = event.target.closest('.card');    // Did the user click a movie card?
-        
-        /* If the user clicked outside both, close the details */
+        const clickedInsideDetails = movieDetails.contains(event.target);   
+        const clickedOnCard = event.target.closest('.card');   
+
         if (!clickedInsideDetails && !clickedOnCard) {
             closeDetails();
-        }
+        } 
     });
 
     // Return for the movieDetailsPanel()
     return {
+        openDetails,
         toggleDetails,
         closeDetails
     };
@@ -309,7 +372,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-//! JS2 WEEK 2 ADDED
+
 //*SEARCH FUNCTIONS
 
 let searchDiv = document.querySelector('.search');
@@ -323,17 +386,27 @@ let searchDropdown = document.getElementById('search-dropdown');
      searchDropdown.style.display = 'none';
         return;
       }
+    if (searchDropdown) {
+     document.addEventListener('click', () => {
+        searchDropdown.style.display = 'none';
+      })};
+
+      if (searchInput.value.trim() !== '') {
+        searchInput.addEventListener('click', () => {
+          searchDropdown.style.display = 'block';
+        });
+      }
 
       // Get movies by title 
 let searchResults = [];
 let searchText = searchInput.value.trim();
-for (let i = 0; i < movies.length; i++) {
-    if (movies[i].title.toLowerCase().includes(searchText.toLowerCase())) {
-      searchResults.push(movies[i]);
+for (let movie of movies) {
+    if (movie.title.toLowerCase().includes(searchText.toLowerCase())) {
+      searchResults.push(movie);
     }
   }
     console.log(`searchResults: ${searchResults.length}`);
-    searchResults.map(result => console.log(result.title));
+    searchResults.forEach(result => console.log(result.title));
 
 
     //Create and populate the results dropdown
@@ -377,14 +450,18 @@ if (searchResults.length > 0) {
   }
 }
 
-//Show results when typing
-let timeoutResults = null;
-searchInput.addEventListener('input', () => {
-  clearTimeout(timeoutResults);
-  timeoutResults = setTimeout(searchFunction, 200);
-});
+    //Show results when typing
+    
+        let timeoutResults = null;
+        searchInput.addEventListener('input', () => {
+        clearTimeout(timeoutResults);
+        timeoutResults = setTimeout(searchFunction, 200);
+        });
 
-//! JS2 WEEK 2 ADDED
+
+
+
+
 // Highlight the selected card
 function highlightCard(selectedCard) {
     document.querySelectorAll('.highlighted').forEach(card => {
@@ -394,7 +471,6 @@ function highlightCard(selectedCard) {
     setTimeout(() => {
     if (selectedCard) {
         selectedCard.classList.add('highlighted');
-
        
         setTimeout(() => {
             selectedCard.classList.remove('highlighted');
@@ -403,7 +479,155 @@ function highlightCard(selectedCard) {
     }
 }, 200);
 }
-//! JS2 WEEK 2 ADDED
+//* TIMER SECTION
+
+let isGameActive = false;
+let selectedMovies = [];
+function timerInteraction() {
+    let timerOnPageCount;
+    let seconds;
+    let minutes;
+    let formatedTimeOnPage;
+    let onPageTimer;
+
+        // On Page Timer
+        function timerOnPage()  {
+        timerOnPageCount = 0;
+        seconds = 0;
+        minutes = 0;
+        setInterval(() => {
+            timerOnPageCount++;
+            seconds = timerOnPageCount % 60;
+            minutes = Math.floor(timerOnPageCount / 60);
+            formatedTimeOnPage = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            onPageTimer.innerHTML = `
+            <h3>Time on page</h3>
+            <h2>${formatedTimeOnPage}</h2>`;
+        }, 1000);
+    }
+    document.addEventListener('DOMContentLoaded', timerOnPage)
+
+    let timerButton = document.getElementById('timer-button');
+ 
+    let menuBar = document.querySelector('.menu');
+  
+        timerDropdown = document.createElement('div');
+        timerDropdown.id = 'timer-dropdown';
+        menuBar.appendChild(timerDropdown);
+
+        timerButton.addEventListener('click', () => {
+            timerDropdown.style.display = (timerDropdown.style.display === 'none' || timerDropdown.style.display === '') ? 'block' : 'none';
+        
+        });
+
+        let timerInterface = document.createElement('div');
+        timerInterface.id = 'timer-interface';
+        timerDropdown.appendChild(timerInterface);
+
+        onPageTimer = document.createElement('div');
+        onPageTimer.id = 'on-page-timer';
+        onPageTimer.innerHTML = `
+        <h3>Time on page</h3>
+            <h2>${formatedTimeOnPage}</h2>`;
+        timerInterface.appendChild(onPageTimer);
+
+        let buttonGameTimer = document.createElement('div');
+        buttonGameTimer.id = 'button-game-timer';
+        buttonGameTimer.innerHTML = `
+        <h3>Start quick choice game</h3>
+        <button id="start-game-btn">3 seconds</button>`;
+        timerInterface.appendChild(buttonGameTimer);
+
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            if (!isGameActive) {
+                startGameTimer(3);
+            }
+        });
+
+        let gameTimerSection = document.createElement('div');
+        gameTimerSection.id = 'game-timer-section';
+        gameTimerSection.innerHTML = `
+        <div id="game-timer-bar">
+        <div id="timer-progress"></div>
+        </div>
+        <div id="selected-movies-list"></div>
+        <div id="final-result"></div>`;
+        timerDropdown.appendChild(gameTimerSection);
+
+
+        // Game Timer
+
+let countdownInterval;
+
+        function startGameTimer(seconds) {
+            isGameActive = true;
+            closeDetails();
+            selectedMovies = [];
+            document.getElementById('timer-progress').style.width = '100%';
+            document.getElementById('selected-movies-list').innerHTML = '';
+
+            let remainingSeconds = seconds;
+            countdownInterval = setInterval(() => {
+                remainingSeconds = Math.round((remainingSeconds - 0.1) * 10) / 10;
+                document.getElementById('timer-progress').style.width =
+                 `${(remainingSeconds / seconds) * 100}%`;
+                 console.log(remainingSeconds);
+
+                if (remainingSeconds <= 0) {
+                    document.getElementById('timer-progress').style.width = '0%';
+                    clearInterval(countdownInterval);
+                    endGame();
+                }
+            }, 100);
+        }
+    }
+    function updateSelectedMoviesList() {
+        const selectedMoviesList = document.getElementById('selected-movies-list');
+        selectedMoviesList.innerHTML = selectedMovies.map(movie => `
+            <div class="selected-movie-item">
+               <img src="${movie.poster_url}" alt="${movie.title}">
+                <span>${movie.title}</span>
+                <span>${movie.ratingIMDB}</span>
+            </div>
+            `).join('');
+   }
+
+    function endGame() {
+        isGameActive = false;
+        const resultContainer = document.getElementById('final-result');
+        resultContainer.innerHTML = '';
+
+        if (selectedMovies.length > 0) {
+            let randomNum = Math.floor(selectedMovies.length * Math.random());
+            const randomMovie = selectedMovies[randomNum];
+
+            const resultTitle = document.createElement('h3');
+            resultTitle.innerHTML = 'Movie for tonight';
+            resultContainer.appendChild(resultTitle);
+
+            const movieResultContainer = document.createElement('div');
+            movieResultContainer.classList.add('selected-movie-item');
+            movieResultContainer.id = 'timer-result';
+            movieResultContainer.innerHTML = `
+            <img src="${randomMovie.poster_url}" alt="${randomMovie.title}">
+             <span>${randomMovie.title}</span>
+             <span>${randomMovie.ratingIMDB}</span>
+             </div>
+            `;
+            resultContainer.appendChild(movieResultContainer);
+
+            movieResultContainer.addEventListener('click', () => {
+                goToMovie(randomMovie);
+            });
+    
+        }
+
+        
+    };
+
+ timerInteraction();
+
+
 function goToMovie(result) {
     const container = document.getElementById('card-container');
 

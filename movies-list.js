@@ -567,7 +567,7 @@ export const movies = [
     movieNamesArr.push(movie.title);
   });
   
-  // console.log(movieNamesArr);
+ console.log(movieNamesArr);
 
 
   console.log('movies:', movies);
