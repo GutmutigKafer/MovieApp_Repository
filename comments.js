@@ -1,5 +1,4 @@
 
-
 //* COMMENTS STORAGE
 
 export let allComments = [];

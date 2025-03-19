@@ -568,6 +568,4 @@ export const movies = [
   });
   
  console.log(movieNamesArr);
-
-
   console.log('movies:', movies);
