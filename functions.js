@@ -9,21 +9,20 @@ const gridButton = document.getElementById('grid-button');
 const listButton = document.getElementById('list-button');
 const cardContainer = document.getElementById('card-container');
 const listContainer = document.getElementById('list-container');
-function showView(view) {
-    currentView = view;
-    if (view === 'grid') {
-        cardContainer.classList.add('show');
-        listContainer.classList.remove('show');
-        showCursor();
-    } else if (view === 'list') {
-        listContainer.classList.add('show');
-        cardContainer.classList.remove('show');
-    }
-   if (view === 'list') {
-      generateGenreFilters();
-      renderMovieList();
-    }
+function showView(newView) {
+  currentView = newView;
+
+  if (newView === 'grid') {
+    cardContainer.classList.add('show');
+    listContainer.classList.remove('show');
+    showCursor();
+  } else if (newView === 'list') {
+    listContainer.classList.add('show');
+    cardContainer.classList.remove('show');
+    generateGenreFilters();
+    renderMovieList();
   }
+}
   gridButton.addEventListener('click', () => showView('grid'));
 listButton.addEventListener('click', () => showView('list'));
 
@@ -45,70 +44,62 @@ function showCursor() {
     customCursor.classList.remove('fade-out');
     customCursor.style.display = 'block';
 
-    //Add Fade In
+    // Add Fade In
     setTimeout(() => {
         customCursor.classList.add('fade-in');
-        }, 500);
+    }, 500);
 
-        // Fade out after 3 seconds
+    // Fade out after 3 seconds
+    setTimeout(() => {
+        customCursor.classList.remove('fade-in');
+        customCursor.classList.add('fade-out');
+
+        // Hide after Fade Out
         setTimeout(() => {
-            customCursor.classList.remove('fade-in');
-            customCursor.classList.add('fade-out');
-            
-            // Hide completely after fade-out
-            setTimeout(() => {
-                customCursor.style.display = 'none';
-            }, 500); 
-        }, 2500);
-
-   
-     
+            customCursor.style.display = 'none';
+        }, 500);
+    }, 2500);
 }
 showCursor();
 
 
 //* GENRE FILTERS
 
-let selectedGenres = new Set();
+const selectedGenres = new Set();
+
 function generateGenreFilters() {
-
-    //Find and create filters from all unique genres 
     const genreContainer = document.getElementById('genre-filters');
-    const allGenres = [... new Set(movies.flatMap(movie => movie.genres))];
+    const uniqueGenres = Array.from(new Set(movies.flatMap(movie => movie.genres)));
 
-    genreContainer.innerHTML = allGenres.map(genreItem => `
-        <div class="genre-filter" data-genre="${genreItem}">${genreItem}</div>`).join('');
+    genreContainer.innerHTML = uniqueGenres.map(genre => `
+        <div class="genre-filter" data-genre="${genre}">${genre}</div>`).join('');
 
-        const genreFilters  = document.querySelectorAll('.genre-filter');
-        genreFilters.forEach(filter => {
-            filter.addEventListener('click', () => {
-                const genre = filter.dataset.genre;
-                toggleGenreFilter(genre);
-            })
-        })
+    const genreFilters = document.querySelectorAll('.genre-filter');
+    genreFilters.forEach(filterElement => {
+        filterElement.addEventListener('click', () => {
+            const genre = filterElement.dataset.genre;
+            toggleGenreFilter(genre);
+        });
+    });
 }
 
 function toggleGenreFilter(genre) {
-    const genreTag = document.querySelector(`[data-genre="${genre}"]`)
-   if (genreTag) {
-    genreTag.classList.toggle('active');
-
-    if (selectedGenres.has(genre)) {
-        selectedGenres.delete(genre);
-    } else {
-        selectedGenres.add(genre);
+    const genreElement = document.querySelector(`[data-genre="${genre}"]`);
+    if (genreElement) {
+        genreElement.classList.toggle('active');
+        if (selectedGenres.has(genre)) {
+            selectedGenres.delete(genre);
+        } else {
+            selectedGenres.add(genre);
+        }
+        renderMovieList();
     }
-    renderMovieList();
-   } else {
-    console.log(`Element with data-genre="${genre}" not found`);
 }
-}
-
 
 //* MOVIE LIST
 
 function renderMovieList() {
-    const container = document.getElementById('movie-list-items');
+    const movieListContainer = document.getElementById('movie-list-items');
 
     const filteredMovies = movies.filter(movie => {
         const matchesGenres = selectedGenres.size === 0 || 
@@ -116,7 +107,7 @@ function renderMovieList() {
         return matchesGenres;
     });
 
-    container.innerHTML = filteredMovies.map(movie => `
+    movieListContainer.innerHTML = filteredMovies.map(movie => `
         <div class="movie-item">
       <img src="${movie.poster_url}" alt="${movie.title}">
       <div>
@@ -181,15 +172,14 @@ function displayMoviesGrid() {
             }
            
             let isTimerDropdown = event.target.closest('.timer-dropdown');
-            if (!isTimerDropdown && !isGameActive) {
+            if (!isTimerDropdown) {
                     timerDropdown.style.display = 'none'
-            } else if (!isTimerDropdown && isGameActive) {
+            } else if (isGameActive) {
                 setTimeout(() => {
-                    timerDropdown.style.display = 'none'}, 1000);
+                    timerDropdown.style.display = 'none'}, 5000);
             }
 
            toggleDetails(movie);
-
     });
         cardContainer.appendChild(card);
 
@@ -535,12 +525,12 @@ function timerInteraction() {
         buttonGameTimer.id = 'button-game-timer';
         buttonGameTimer.innerHTML = `
         <h3>Start quick choice game</h3>
-        <button id="start-game-btn">3 seconds</button>`;
+        <button id="start-game-btn">5 seconds</button>`;
         timerInterface.appendChild(buttonGameTimer);
 
         document.getElementById('start-game-btn').addEventListener('click', () => {
             if (!isGameActive) {
-                startGameTimer(3);
+                startGameTimer(5);
             }
         });
 
@@ -571,7 +561,6 @@ let countdownInterval;
                 remainingSeconds = Math.round((remainingSeconds - 0.1) * 10) / 10;
                 document.getElementById('timer-progress').style.width =
                  `${(remainingSeconds / seconds) * 100}%`;
-                 console.log(remainingSeconds);
 
                 if (remainingSeconds <= 0) {
                     document.getElementById('timer-progress').style.width = '0%';
