@@ -15,7 +15,7 @@
       <div class="menu">
         <a id="grid-button">Movies</a>
         <a id="list-button">Genres</a>
-        <a href="#">Trending</a>
+        <a id="timer-button">Timer</a>
       </div>
       <div class="search">
         <input
@@ -23,6 +23,7 @@
           class="searchText"
           placeholder="Search for a movie..."
         />
+        <div id="search-dropdown" class="search-dropdown"></div>
         <span class="searchIcon">
           <img width="20" height="20" src="https://img.icons8.com/ios/100/737373/search--v1.png" alt="search--v1"/>
         </span>
@@ -49,7 +50,7 @@
         <img width="30" height="30" src="https://img.icons8.com/metro/100/FFFFFF/multiply.png" alt="close-button"/>
       </button>
       <img id="details-poster" src="" alt="Movie Poster" />
-      <h2 id="details-title"></h2>
+      <h2 id="details-title">.</h2>
       <p id="details-year"></p>
 <!-- Star-rating -->
   <div id="star-rating" class ="rating">
@@ -66,8 +67,6 @@
       <p id="details-cast"></p>
       <p id="details-price"></p>
     </div>
-
-   
 
     <script defer type="module" src="functions.js"></script>
     <script defer type="module" src="comments.js"></script>
