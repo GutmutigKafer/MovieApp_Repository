@@ -9,13 +9,17 @@ const cardContainer = document.getElementById("card-container");
 const listContainer = document.getElementById("list-container");
 
 const showView = (newView) => {
+  // Update current view state
   currentView = newView;
 
+  // Switch to Grid View
   if (newView === "grid") {
     cardContainer.classList.add("show");
     listContainer.classList.remove("show");
     showCursor();
-  } else if (newView === "list") {
+  }
+  // Switch to List View
+  else if (newView === "list") {
     listContainer.classList.add("show");
     cardContainer.classList.remove("show");
     generateGenreFilters();
@@ -23,6 +27,7 @@ const showView = (newView) => {
   }
 };
 
+// Event listeners to switch between views
 gridButton.addEventListener("click", () => showView("grid"));
 listButton.addEventListener("click", () => showView("list"));
 
@@ -62,10 +67,12 @@ const selectedGenres = new Set();
 
 const generateGenreFilters = () => {
   const genreContainer = document.getElementById("genre-filters");
+  // Get unique genres from movie list
   const uniqueGenres = Array.from(
     new Set(movies.flatMap((movie) => movie.genres))
   );
 
+  // Create genre filter elements
   genreContainer.innerHTML = uniqueGenres
     .map(
       (genre) => `
@@ -73,6 +80,7 @@ const generateGenreFilters = () => {
     )
     .join("");
 
+  // Add click event listeners to genre filters
   const genreFilters = document.querySelectorAll(".genre-filter");
   genreFilters.forEach((filterElement) => {
     filterElement.addEventListener("click", () => {
@@ -85,27 +93,32 @@ const generateGenreFilters = () => {
 const toggleGenreFilter = (genre) => {
   const genreElement = document.querySelector(`[data-genre="${genre}"]`);
   if (genreElement) {
+    // Toggle active class on genre element
     genreElement.classList.toggle("active");
+    // Add or remove genre from selected genres
     if (selectedGenres.has(genre)) {
       selectedGenres.delete(genre);
     } else {
       selectedGenres.add(genre);
     }
+    // Update movie list based on selected genres
     renderMovieList();
   }
 };
 
 //* MOVIE LIST
+
 const renderMovieList = () => {
   const movieListContainer = document.getElementById("movie-list-items");
 
   const filteredMovies = movies.filter((movie) => {
+    // Check if movie genres match selected genres
     const matchesGenres =
       selectedGenres.size === 0 ||
       [...selectedGenres].every((genre) => movie.genres.includes(genre));
     return matchesGenres;
   });
-
+  // Create HTML for filtered movies
   movieListContainer.innerHTML = filteredMovies
     .map(
       (movie) => `
@@ -128,6 +141,8 @@ const renderMovieList = () => {
     )
     .join("");
 };
+
+// Prevent closing the Timer Game right after it ends
 let bufferPeriodActive = false;
 //* MOVIES GRID
 const displayMoviesGrid = () => {
@@ -163,7 +178,6 @@ const displayMoviesGrid = () => {
     card.style.gridColumn = gridColumn;
     card.style.gridRow = gridRow;
 
-    
     //TimerGame selection logic
     card.addEventListener("click", (event) => {
       if (isGameActive) {
@@ -197,8 +211,6 @@ const displayMoviesGrid = () => {
     consoleGrid[y][x] = String(movie.id);
   });
 
-  consoleGrid.forEach((row) => console.log(row.join(" ")));
-
   // Center the grid after rendering
   setTimeout(() => {
     const centerX = (cardContainer.scrollWidth - cardContainer.clientWidth) / 2;
@@ -226,28 +238,36 @@ const movieDetailsPanel = () => {
     }
   };
 
+  /*************  ✨ Codeium Command 🌟  *************/
   /* Open sliding window */
   const openDetails = (movie, currentMovieId) => {
+    // Show the movie details container
     movieDetails.classList.add("show");
+
+    // Reset the scroll position to the top
     movieDetails.scrollTop = 0;
+    // Set the movie title
     document.getElementById("details-title").textContent = movie.title;
+    // Set the movie year
     document.getElementById("details-year").textContent = `${movie.movieYear}`;
-    document.getElementById(
-      "details-genre"
-    ).innerHTML = `<span class="bold">Genre:</span> ${
-      movie.genres.join(", ") || ""
-    }`;
-    document.getElementById(
-      "details-director"
-    ).innerHTML = `<span class="bold">Director:</span> ${movie.director}`;
-    document.getElementById(
-      "details-cast"
-    ).innerHTML = `<span class="bold">Cast:</span> ${
-      movie.actors?.join(", ") || ""
-    }`;
-    document.getElementById("details-description").textContent =
-      movie.description;
-    document.getElementById("details-poster").src = movie.poster_url;
+    const detailsGenre = document.getElementById("details-genre");
+    const detailsDirector = document.getElementById("details-director");
+    const detailsCast = document.getElementById("details-cast");
+    const detailsDescription = document.getElementById("details-description");
+    const detailsPoster = document.getElementById("details-poster");
+    detailsGenre.innerHTML = `<span class="bold">Genre:</span> ${movie.genres.join(
+      ", "
+    )}`;
+    detailsDirector.innerHTML = `<span class="bold">Director:</span> ${movie.director}`;
+    detailsCast.innerHTML = `<span class="bold">Cast:</span> ${movie.actors?.join(
+      ", "
+    )}`;
+
+    detailsDescription.textContent = movie.description;
+
+    detailsPoster.src = movie.poster_url;
+
+    // Set the genre(s) of the movie
 
     //* COMMENTS SECTION
     // Check if comments section already exists, if not create a new one
@@ -479,34 +499,42 @@ let isGameActive = false;
 let selectedMovies = [];
 
 const timerInteraction = () => {
-  let timerOnPageCount;
-  let seconds;
-  let minutes;
   let formatedTimeOnPage;
   let onPageTimer;
 
   // On Page Timer
   const timerOnPage = () => {
-    timerOnPageCount = 0;
-    seconds = 0;
-    minutes = 0;
+    let timerOnPageCount = 0;
+    let formatedTimeOnPage = "00:00";
+
+    onPageTimer.innerHTML = `
+          <h3>Time on page</h3>
+          <h2>${formatedTimeOnPage}</h2>
+        `;
+
+    // Set interval for timer
     setInterval(() => {
       timerOnPageCount++;
-      seconds = timerOnPageCount % 60;
-      minutes = Math.floor(timerOnPageCount / 60);
+      // Calculate seconds and minutes
+      let seconds = timerOnPageCount % 60;
+      let minutes = Math.floor(timerOnPageCount / 60);
+
+      // Update formated time
       formatedTimeOnPage = `${minutes.toString().padStart(2, "0")}:${seconds
         .toString()
         .padStart(2, "0")}`;
+
+      // Update the on page timer
       onPageTimer.innerHTML = `
-        <h3>Time on page</h3>
-        <h2>${formatedTimeOnPage}</h2>`;
+      <h3>Time on page</h3>
+      <h2>${formatedTimeOnPage}</h2>
+      `;
     }, 1000);
   };
 
   // Start  on the page timer
   document.addEventListener("DOMContentLoaded", timerOnPage);
 
- 
   // Create timer dropdown menu and add event listeners to the timer button
   let timerButton = document.getElementById("timer-button");
   let menuBar = document.querySelector(".menu");
@@ -516,7 +544,6 @@ const timerInteraction = () => {
   menuBar.appendChild(timerDropdown);
 
   timerButton.addEventListener("click", () => {
-    
     // Toggle the display of the timer dropdown menu
     timerDropdown.style.display =
       timerDropdown.style.display === "none" ||
@@ -524,8 +551,8 @@ const timerInteraction = () => {
         ? "block"
         : "none";
   });
- 
-   // Create interface for the timer dropdown
+
+  // Create interface for the timer dropdown
   let timerInterface = document.createElement("div");
   timerInterface.id = "timer-interface";
   timerDropdown.appendChild(timerInterface);
@@ -537,7 +564,7 @@ const timerInteraction = () => {
         <h2>${formatedTimeOnPage}</h2>`;
   timerInterface.appendChild(onPageTimer);
 
-   // Create the quick choice game button
+  // Create the quick choice game button
   let buttonGameTimer = document.createElement("div");
   buttonGameTimer.id = "button-game-timer";
   buttonGameTimer.innerHTML = `
@@ -552,7 +579,7 @@ const timerInteraction = () => {
     }
   });
 
-   // Create the game timer section
+  // Create the game timer section
   let gameTimerSection = document.createElement("div");
   gameTimerSection.id = "game-timer-section";
   gameTimerSection.innerHTML = `
@@ -575,11 +602,14 @@ const timerInteraction = () => {
 
     let remainingSeconds = seconds;
     countdownInterval = setInterval(() => {
+      // Reduce the remaining seconds by 0.1 each time
       remainingSeconds = Math.round((remainingSeconds - 0.1) * 10) / 10;
+      // Update the progress bar
       document.getElementById("timer-progress").style.width = `${
         (remainingSeconds / seconds) * 100
       }%`;
 
+      // End the game
       if (remainingSeconds <= 0) {
         document.getElementById("timer-progress").style.width = "0%";
         clearInterval(countdownInterval);
@@ -589,6 +619,7 @@ const timerInteraction = () => {
   };
 };
 
+// Update the list of selected movies
 const updateSelectedMoviesList = () => {
   const selectedMoviesList = document.getElementById("selected-movies-list");
   selectedMoviesList.innerHTML = selectedMovies
@@ -606,21 +637,26 @@ const updateSelectedMoviesList = () => {
 
 const endGame = () => {
   isGameActive = false;
-// Run a buffer period, so the dropdown doesn't axidently close on click
-  bufferPeriodActive = true;
-  setTimeout(() => bufferPeriodActive = false, 3000);
 
+  // Run a buffer period, so the dropdown doesn't axidently close on click
+  bufferPeriodActive = true;
+  setTimeout(() => (bufferPeriodActive = false), 3000);
+
+  // Clear previous game results
   const resultContainer = document.getElementById("final-result");
   resultContainer.innerHTML = "";
 
+  // If there are movies selected, display a random one
   if (selectedMovies.length > 0) {
     let randomNum = Math.floor(selectedMovies.length * Math.random());
     const randomMovie = selectedMovies[randomNum];
 
+    // Add the title for the selected random movie
     const resultTitle = document.createElement("h3");
     resultTitle.innerHTML = "Movie for tonight";
     resultContainer.appendChild(resultTitle);
 
+    // Create a container for the random movie result
     const movieResultContainer = document.createElement("div");
     movieResultContainer.classList.add("selected-movie-item");
     movieResultContainer.id = "timer-result";
@@ -632,11 +668,13 @@ const endGame = () => {
         `;
     resultContainer.appendChild(movieResultContainer);
 
+    // Add click event to navigate to the selected movie
     movieResultContainer.addEventListener("click", () => {
       goToMovie(randomMovie);
     });
   }
 };
+
 timerInteraction();
 
 const goToMovie = (result) => {
@@ -648,6 +686,7 @@ const goToMovie = (result) => {
   );
 
   if (selectedCard) {
+    // Highlight the card
     highlightCard(selectedCard);
 
     //Grid dimentions
@@ -657,6 +696,7 @@ const goToMovie = (result) => {
     const gridColumn = result.coordinates.x - minX + 1;
     const gridRow = result.coordinates.y - minY + 1;
 
+    // Calculate the x and y coordinates of the card in the window
     const cardWidth = 380;
     const cardHeight = 620;
     const columnGap = 20;
@@ -668,6 +708,7 @@ const goToMovie = (result) => {
     const centerX = cardX + cardWidth / 2 - window.innerWidth / 2;
     const centerY = cardY + cardHeight / 2 - window.innerHeight / 2;
 
+    // Scroll to the card
     container.scrollTo({
       left: centerX,
       top: centerY,

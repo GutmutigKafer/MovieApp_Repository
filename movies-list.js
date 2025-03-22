@@ -560,12 +560,3 @@ export const movies = [
         coordinates: { x: 3, y: 5 },
       },
   ];
-
-  let movieNamesArr = [];
-  
-  movies.forEach((movie) => {
-    movieNamesArr.push(movie.title);
-  });
-  
- console.log(movieNamesArr);
-  console.log('movies:', movies);
