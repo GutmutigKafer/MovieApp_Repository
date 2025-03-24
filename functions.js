@@ -1,5 +1,24 @@
-import { movies } from "./movies-list.js";
 import { allComments, addCommentToStorage } from "./comments.js";
+//* FETCH MOVIES DATA
+let movies = null;
+const fetchMoviesData = () => {
+  fetch("https://raw.githubusercontent.com/GutmutigKafer/gutmutigkafer.github.io/refs/heads/main/movieapp-data/movies-list.json")
+  .then(response => response.json())
+  .then(moviesJSON => {
+    movies = moviesJSON;
+    initializeMoviesFunctions();
+  })
+  .catch(error => console.error('Error loading movies:', error));
+};
+
+const initializeMoviesFunctions = () => {
+  generateGenreFilters();
+  renderMovieList();
+  displayMoviesGrid();
+  searchFunction();
+};
+
+fetchMoviesData();
 
 //* SWITCH VIEW FUNCTION
 let currentView = "grid";
@@ -64,7 +83,7 @@ showCursor();
 
 //* GENRE FILTERS
 const selectedGenres = new Set();
-
+//!INITIALIZED IN FETCH
 const generateGenreFilters = () => {
   const genreContainer = document.getElementById("genre-filters");
   // Get unique genres from movie list
@@ -107,7 +126,7 @@ const toggleGenreFilter = (genre) => {
 };
 
 //* MOVIE LIST
-
+//!INITIALIZED IN FETCH
 const renderMovieList = () => {
   const movieListContainer = document.getElementById("movie-list-items");
 
@@ -145,6 +164,7 @@ const renderMovieList = () => {
 // Prevent closing the Timer Game right after it ends
 let bufferPeriodActive = false;
 //* MOVIES GRID
+//!INITIALIZED IN FETCH
 const displayMoviesGrid = () => {
   const cardContainer = document.getElementById("card-container");
 
@@ -397,6 +417,7 @@ let searchInput = document.querySelector(".search .searchText");
 let searchResults = [];
 let searchDropdown = document.getElementById("search-dropdown");
 
+//!INITIALIZED IN FETCH
 const searchFunction = () => {
   searchResults = [];
   const searchText = searchInput.value.trim().toLowerCase();
@@ -746,5 +767,4 @@ const screenDrag = () => {
     container.scrollTop = scrollTop - walkY;
   });
 };
-displayMoviesGrid();
 screenDrag();
