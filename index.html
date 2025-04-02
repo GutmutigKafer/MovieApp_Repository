@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, height=device-height, initial-scale=1.0"
+    />
     <link rel="stylesheet" href="styles.css" />
 
     <title>Movie Application</title>
@@ -11,7 +14,9 @@
   <body>
     <!-- Navigation Bar -->
     <nav class="navigationBar">
-      <div class="appName"><span id ="name1">Movie</span><span id="name2">Matrix</span></div>
+      <div class="appName">
+        <span id="name1">Movie</span><span id="name2">Matrix</span>
+      </div>
       <div class="menu">
         <a id="grid-button">Movies</a>
         <a id="list-button">Genres</a>
@@ -25,43 +30,55 @@
         />
         <div id="search-dropdown" class="search-dropdown"></div>
         <span class="searchIcon">
-          <img width="20" height="20" src="https://img.icons8.com/ios/100/737373/search--v1.png" alt="search--v1"/>
+          <img
+            width="20"
+            height="20"
+            src="https://img.icons8.com/ios/100/737373/search--v1.png"
+            alt="search--v1"
+          />
         </span>
       </div>
     </nav>
-   
+
     <!-- Grid View -->
-    <div id="card-container" onload="initializeMoviesFunctions(), fetchMoviesData()"></div>
+    <div
+      id="card-container"
+      onload="initializeMoviesFunctions(), fetchMoviesData()"
+    ></div>
 
     <!-- List View -->
-     <div id="list-container" class="hidden">
+    <div id="list-container" class="hidden">
       <div class="filter-section">
         <h3>Filter by Genre</h3>
         <div id="genre-filters"></div>
       </div>
 
-        <div id="movie-list-items"></div>
-      
-     </div>
-  
+      <div id="movie-list-items"></div>
+    </div>
+
     <!-- Movie Details -->
     <div id="movie-details" class="movie-details">
       <button class="close-btn" onclick="closeDetails()">
-        <img width="30" height="30" src="https://img.icons8.com/metro/100/FFFFFF/multiply.png" alt="close-button"/>
+        <img
+          width="30"
+          height="30"
+          src="https://img.icons8.com/metro/100/FFFFFF/multiply.png"
+          alt="close-button"
+        />
       </button>
       <img id="details-poster" src="" alt="Movie Poster" />
       <h2 id="details-title">.</h2>
       <p id="details-year"></p>
-<!-- Star-rating -->
-  <div id="star-rating" class ="rating">
-  <span class="star" data-value="1">&#9733;</span>
-  <span class="star" data-value="2">&#9733;</span>
-  <span class="star" data-value="3">&#9733;</span>
-  <span class="star" data-value="4">&#9733;</span>
-  <span class="star" data-value="5">&#9733;</span>
-  </div>
+      <!-- Star-rating -->
+      <div id="star-rating" class="rating">
+        <span class="star" data-value="1">&#9733;</span>
+        <span class="star" data-value="2">&#9733;</span>
+        <span class="star" data-value="3">&#9733;</span>
+        <span class="star" data-value="4">&#9733;</span>
+        <span class="star" data-value="5">&#9733;</span>
+      </div>
 
-    <p id="details-description"></p>
+      <p id="details-description"></p>
       <p id="details-genre"></p>
       <p id="details-director"></p>
       <p id="details-cast"></p>
