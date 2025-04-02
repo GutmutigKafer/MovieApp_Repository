@@ -8,17 +8,20 @@ import {
 } from "./comments.js";
 //* FETCH MOVIES DATA
 let movies = null;
-const fetchMoviesData = () => {
-  fetch(
-    "https://raw.githubusercontent.com/GutmutigKafer/gutmutigkafer.github.io/refs/heads/main/movieapp-data/movies-list.json"
-  )
-    .then((response) => response.json())
-    .then((moviesJSON) => {
-      movies = moviesJSON;
-      initializeMoviesFunctions();
-    })
-    .catch((error) => console.error("Error loading movies:", error));
-};
+async function fetchMoviesData() {
+  try {
+    const result = await fetch(
+      "https://raw.githubusercontent.com/GutmutigKafer/gutmutigkafer.github.io/refs/heads/main/movieapp-data/movies-list.json"
+    );
+    const resultJSON = await result.json();
+    movies = resultJSON;
+    initializeMoviesFunctions();
+    return movies;
+  } catch (error) {
+    console.error("Error loading movies:", error);
+    return error;
+  }
+}
 
 const initializeMoviesFunctions = () => {
   generateGenreFilters();
@@ -270,7 +273,7 @@ const openDetails = (movie, currentMovieId) => {
   detailsPoster.src = movie.poster_url;
 
   commentForm.addEventListener("submit", (event) => {
-    commentsFunction(event);
+    updateComments(event);
   });
 
   // Display comments for the current movie ID
@@ -340,7 +343,7 @@ const displayComments = (currentMovieId) => {
 };
 
 // Function to add a new comment
-function commentsFunction(event) {
+const updateComments = (event) => {
   event.preventDefault();
   // Get the user's name and comment from the input fields
   const name = nameInput.value.trim();
@@ -353,7 +356,7 @@ function commentsFunction(event) {
     // Update the comment display with the new comment
     displayComments(currentMovie.id);
   }
-}
+};
 movieDetails.append(commentsSection);
 
 //* RATING FUNCTIONS
@@ -361,7 +364,7 @@ movieDetails.append(commentsSection);
 const stars = document.querySelectorAll(".star"); //Get all the star elements
 let selectedRating = 0; // Keeps track of the selected rating
 
-function displayRating(currentMovieId) {
+const displayRating = (currentMovieId) => {
   const starRating = allRatings.find(
     (rating) => rating.movieId === currentMovieId
   );
@@ -372,7 +375,7 @@ function displayRating(currentMovieId) {
     selectedRating = 0;
     updateStarHighlight(0);
   }
-}
+};
 
 // Loops through each star to update its appearance based on the selected rating
 const updateStarHighlight = (rating) => {
@@ -390,7 +393,7 @@ stars.forEach((star) => {
   });
 });
 
-function updateRatingInStorage(movieId, rating) {
+const updateRatingInStorage = (movieId, rating) => {
   const existingRating = allRatings.find(
     (rating) => rating.movieId === movieId
   );
@@ -400,7 +403,7 @@ function updateRatingInStorage(movieId, rating) {
     addRatingToStorage(movieId, rating);
   }
   saveRatings();
-}
+};
 
 //*SEARCH FUNCTIONS
 const searchDiv = document.querySelector(".search");
@@ -506,103 +509,90 @@ const highlightCard = (selectedCard) => {
   }, 200);
 };
 
-//* TIMER SECTION
-let timerDropdown;
+//* TIMER ON PAGE SECTION
 let isGameActive = false;
 let selectedMovies = [];
+let formatedTimeOnPage = "00:00";
+// On Page Timer
+let onPageTimer = document.createElement("div");
+onPageTimer.id = "on-page-timer";
+onPageTimer.innerHTML = `
+    <h3>Time on page</h3>
+        <h2>${formatedTimeOnPage}</h2>`;
 
-const timerInteraction = () => {
-  let formatedTimeOnPage;
-  let onPageTimer;
+let timerOnPageCount = 0;
 
-  // On Page Timer
-  const timerOnPage = () => {
-    let timerOnPageCount = 0;
-    formatedTimeOnPage = "00:00";
+// Set interval for timer
+const timerOnPage = () =>
+  setInterval(() => {
+    timerOnPageCount++;
+    // Calculate seconds and minutes
+    const seconds = timerOnPageCount % 60;
+    const minutes = Math.floor(timerOnPageCount / 60);
 
+    // Update formated time
+    formatedTimeOnPage = `${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+
+    // Update the on page timer
     onPageTimer.innerHTML = `
-          <h3>Time on page</h3>
-          <h2>${formatedTimeOnPage}</h2>
-        `;
-
-    // Set interval for timer
-    setInterval(() => {
-      timerOnPageCount++;
-      // Calculate seconds and minutes
-      const seconds = timerOnPageCount % 60;
-      const minutes = Math.floor(timerOnPageCount / 60);
-
-      // Update formated time
-      formatedTimeOnPage = `${minutes.toString().padStart(2, "0")}:${seconds
-        .toString()
-        .padStart(2, "0")}`;
-
-      // Update the on page timer
-      onPageTimer.innerHTML = `
       <h3>Time on page</h3>
       <h2>${formatedTimeOnPage}</h2>
       `;
-    }, 1000);
-  };
+  }, 1000);
 
-  // Start  on the page timer
-  document.addEventListener("DOMContentLoaded", timerOnPage);
+// Start  on the page timer
+document.addEventListener("DOMContentLoaded", timerOnPage);
 
-  // Create timer dropdown menu and add event listeners to the timer button
-  const timerButton = document.getElementById("timer-button");
-  const menuBar = document.querySelector(".menu");
+// Create timer dropdown menu and add event listeners to the timer button
+const timerButton = document.getElementById("timer-button");
+const menuBar = document.querySelector(".menu");
 
-  timerDropdown = document.createElement("div");
-  timerDropdown.id = "timer-dropdown";
-  menuBar.appendChild(timerDropdown);
+const timerDropdown = document.createElement("div");
+timerDropdown.id = "timer-dropdown";
+menuBar.appendChild(timerDropdown);
 
-  timerButton.addEventListener("click", () => {
-    // Toggle the display of the timer dropdown menu
-    timerDropdown.style.display =
-      timerDropdown.style.display === "none" ||
-      timerDropdown.style.display === ""
-        ? "block"
-        : "none";
-  });
+timerButton.addEventListener("click", () => {
+  // Toggle the display of the timer dropdown menu
+  timerDropdown.style.display =
+    timerDropdown.style.display === "none" || timerDropdown.style.display === ""
+      ? "block"
+      : "none";
+});
 
-  // Create interface for the timer dropdown
-  const timerInterface = document.createElement("div");
-  timerInterface.id = "timer-interface";
-  timerDropdown.appendChild(timerInterface);
+// Create interface for the timer dropdown
+const timerInterface = document.createElement("div");
+timerInterface.id = "timer-interface";
+timerDropdown.appendChild(timerInterface);
 
-  onPageTimer = document.createElement("div");
-  onPageTimer.id = "on-page-timer";
-  onPageTimer.innerHTML = `
-    <h3>Time on page</h3>
-        <h2>${formatedTimeOnPage}</h2>`;
-  timerInterface.appendChild(onPageTimer);
+timerInterface.appendChild(onPageTimer);
 
-  // Create the quick choice game button
-  const buttonGameTimer = document.createElement("div");
-  buttonGameTimer.id = "button-game-timer";
-  buttonGameTimer.innerHTML = `
+// Create the quick choice game button
+const buttonGameTimer = document.createElement("div");
+buttonGameTimer.id = "button-game-timer";
+buttonGameTimer.innerHTML = `
     <h3>Start quick choice game</h3>
     <button id="start-game-btn">5 seconds</button>`;
-  timerInterface.appendChild(buttonGameTimer);
+timerInterface.appendChild(buttonGameTimer);
 
-  // Add event listener to the start game button
-  document.getElementById("start-game-btn").addEventListener("click", () => {
-    if (!isGameActive) {
-      startGameTimer(5);
-    }
-  });
+// Add event listener to the start game button
+document.getElementById("start-game-btn").addEventListener("click", () => {
+  if (!isGameActive) {
+    startGameTimer(5);
+  }
+});
 
-  // Create the game timer section
-  const gameTimerSection = document.createElement("div");
-  gameTimerSection.id = "game-timer-section";
-  gameTimerSection.innerHTML = `
+// Create the game timer section
+const gameTimerSection = document.createElement("div");
+gameTimerSection.id = "game-timer-section";
+gameTimerSection.innerHTML = `
     <div id="game-timer-bar">
     <div id="timer-progress"></div>
     </div>
     <div id="selected-movies-list"></div>
     <div id="final-result"></div>`;
-  timerDropdown.appendChild(gameTimerSection);
-};
+timerDropdown.appendChild(gameTimerSection);
 
 // Update the list of selected movies
 const updateSelectedMoviesList = () => {
@@ -636,8 +626,7 @@ const timerGameFunction = (event, movie) => {
   event.stopPropagation();
 };
 
-// Game Timer
-let countdownInterval;
+// Start Game Timer
 
 const startGameTimer = (seconds) => {
   isGameActive = true;
@@ -648,7 +637,7 @@ const startGameTimer = (seconds) => {
   document.getElementById("selected-movies-list").innerHTML = "";
 
   let remainingSeconds = seconds;
-  countdownInterval = setInterval(() => {
+  const countdownInterval = setInterval(() => {
     // Reduce the remaining seconds by 0.1 each time
     remainingSeconds = Math.round((remainingSeconds - 0.1) * 10) / 10;
     // Update the progress bar
@@ -664,7 +653,7 @@ const startGameTimer = (seconds) => {
     }
   }, 100);
 };
-
+// End Game Timer
 const endGame = () => {
   isGameActive = false;
 
@@ -704,8 +693,6 @@ const endGame = () => {
     });
   }
 };
-
-timerInteraction();
 
 const goToMovie = (result) => {
   const container = document.getElementById("card-container");
@@ -753,6 +740,7 @@ const screenDrag = () => {
   let isDragging = false;
   let startX, startY; // Position of grab
   let scrollLeft, scrollTop; // How much scrolled
+  let currentX, currentY;
 
   container.addEventListener("mousedown", (dragEvent) => {
     dragEvent.preventDefault(); // Prevent from selecting text and images  while dragging
@@ -761,19 +749,27 @@ const screenDrag = () => {
     startY = dragEvent.pageY - container.offsetTop;
     scrollLeft = container.scrollLeft; // Current scroll position of the container
     scrollTop = container.scrollTop;
+    currentX = dragEvent.pageX;
+    currentY = dragEvent.pageY;
   });
 
   container.addEventListener("mouseup", () => (isDragging = false)); //Stop dragging if mouse is released
   container.addEventListener("mouseleave", () => (isDragging = false));
 
-  container.addEventListener("mousemove", (dragEvent) => {
+  const dragLoop = () => {
     if (!isDragging) return;
-    const xCoord = dragEvent.pageX - container.offsetLeft;
-    const yCoord = dragEvent.pageY - container.offsetTop;
-    const walkX = (xCoord - startX) * 1.5; // Dragging speed + Multiplier
-    const walkY = (yCoord - startY) * 1.5; // Dragging speed + Multiplier
+    const walkX = (currentX - startX) * 1.5; // Dragging speed + Multiplier
+    const walkY = (currentY - startY) * 1.5; // Dragging speed + Multiplier
     container.scrollLeft = scrollLeft - walkX;
     container.scrollTop = scrollTop - walkY;
+    requestAnimationFrame(dragLoop);
+  };
+
+  container.addEventListener("mousemove", (dragEvent) => {
+    if (!isDragging) return;
+    currentX = dragEvent.pageX;
+    currentY = dragEvent.pageY;
+    dragLoop();
   });
 };
 screenDrag();
