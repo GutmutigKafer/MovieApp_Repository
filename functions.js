@@ -1,5 +1,33 @@
-import { movies } from "./movies-list.js";
-import { allComments, addCommentToStorage } from "./comments.js";
+import {
+  allComments,
+  addCommentToStorage,
+  allRatings,
+  addRatingToStorage,
+  saveRatings,
+  removeDublicates,
+} from "./comments.js";
+//* FETCH MOVIES DATA
+let movies = null;
+const fetchMoviesData = () => {
+  fetch(
+    "https://raw.githubusercontent.com/GutmutigKafer/gutmutigkafer.github.io/refs/heads/main/movieapp-data/movies-list.json"
+  )
+    .then((response) => response.json())
+    .then((moviesJSON) => {
+      movies = moviesJSON;
+      initializeMoviesFunctions();
+    })
+    .catch((error) => console.error("Error loading movies:", error));
+};
+
+const initializeMoviesFunctions = () => {
+  generateGenreFilters();
+  renderMovieList();
+  displayMoviesGrid();
+  searchFunction();
+};
+
+fetchMoviesData();
 
 //* SWITCH VIEW FUNCTION
 let currentView = "grid";
@@ -64,7 +92,7 @@ showCursor();
 
 //* GENRE FILTERS
 const selectedGenres = new Set();
-
+//!INITIALIZED IN FETCH
 const generateGenreFilters = () => {
   const genreContainer = document.getElementById("genre-filters");
   // Get unique genres from movie list
@@ -107,7 +135,7 @@ const toggleGenreFilter = (genre) => {
 };
 
 //* MOVIE LIST
-
+//!INITIALIZED IN FETCH
 const renderMovieList = () => {
   const movieListContainer = document.getElementById("movie-list-items");
 
@@ -145,14 +173,15 @@ const renderMovieList = () => {
 // Prevent closing the Timer Game right after it ends
 let bufferPeriodActive = false;
 //* MOVIES GRID
+//!INITIALIZED IN FETCH
 const displayMoviesGrid = () => {
   const cardContainer = document.getElementById("card-container");
 
   // Calculating grid dimensions, depending on the min/max coordinate values
-  const minX = Math.min(...movies.map((m) => m.coordinates.x));
-  const maxX = Math.max(...movies.map((m) => m.coordinates.x));
-  const minY = Math.min(...movies.map((m) => m.coordinates.y));
-  const maxY = Math.max(...movies.map((m) => m.coordinates.y));
+  const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
+  const maxX = Math.max(...movies.map((movie) => movie.coordinates.x));
+  const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
+  const maxY = Math.max(...movies.map((movie) => movie.coordinates.y));
 
   //Seting grid size
   const gridWidth = maxX - minX + 1;
@@ -178,107 +207,104 @@ const displayMoviesGrid = () => {
     card.style.gridColumn = gridColumn;
     card.style.gridRow = gridRow;
 
-    //TimerGame selection logic
     card.addEventListener("click", (event) => {
       if (isGameActive) {
-        if (!selectedMovies.some((m) => m.id === movie.id)) {
-          selectedMovies.push(movie);
-          updateSelectedMoviesList();
-        }
-        //Prevent the details to open during the game
-        event.stopPropagation();
-        return;
+        timerGameFunction(event, movie);
+      } else {
+        toggleDetails(movie);
       }
-      let isTimerDropdown = event.target.closest(".timer-dropdown");
-
-      if (!isTimerDropdown && !bufferPeriodActive) {
-        timerDropdown.style.display = "none";
-      }
-      toggleDetails(movie);
     });
+
     cardContainer.appendChild(card);
   });
 
-  //* Display All movies on the grid in console
-  //Creates a grid with empty cells
-  const consoleGrid = Array(gridHeight)
-    .fill()
-    .map(() => Array(gridWidth).fill("."));
-
-  movies.forEach((movie) => {
-    const x = movie.coordinates.x - minX;
-    const y = movie.coordinates.y - minY;
-    consoleGrid[y][x] = String(movie.id);
-  });
-
   // Center the grid after rendering
-  setTimeout(() => {
-    const centerX = (cardContainer.scrollWidth - cardContainer.clientWidth) / 2;
-    const centerY =
-      (cardContainer.scrollHeight - cardContainer.clientHeight) / 2;
-    cardContainer.scrollTo(centerX, centerY);
-  }, 100);
+  const centerX = (cardContainer.scrollWidth - cardContainer.clientWidth) / 2;
+  const centerY = (cardContainer.scrollHeight - cardContainer.clientHeight) / 2;
+  cardContainer.scrollTo(centerX, centerY);
 };
-let timerDropdown;
 
 // Grouped all the Details functions under movieDetailsPanel()
 const movieDetails = document.getElementById("movie-details");
 
-const movieDetailsPanel = () => {
-  /* Sliding window */
-  const toggleDetails = (movie) => {
-    const currentMovieTitle =
-      document.getElementById("details-title").textContent;
-    const isSameMovie = currentMovieTitle === movie.title;
+/* Sliding window */
+const toggleDetails = (movie) => {
+  const currentMovieTitle =
+    document.getElementById("details-title").textContent;
+  const isSameMovie = currentMovieTitle === movie.title;
 
-    if (movieDetails.classList.contains("show")) {
-      isSameMovie ? closeDetails() : openDetails(movie, movie.id);
-    } else {
-      openDetails(movie, movie.id);
-    }
-  };
+  if (movieDetails.classList.contains("show")) {
+    isSameMovie ? closeDetails() : openDetails(movie, movie.id);
+  } else {
+    openDetails(movie, movie.id);
+  }
+};
+let currentMovie = null;
+/* Open sliding window */
+const openDetails = (movie, currentMovieId) => {
+  currentMovie = movie;
+  // Show the movie details container
+  movieDetails.classList.add("show");
 
-  /*************  ✨ Codeium Command 🌟  *************/
-  /* Open sliding window */
-  const openDetails = (movie, currentMovieId) => {
-    // Show the movie details container
-    movieDetails.classList.add("show");
+  // Reset the scroll position to the top
+  movieDetails.scrollTop = 0;
+  // Set the movie title
+  document.getElementById("details-title").textContent = movie.title;
+  // Set the movie year
+  document.getElementById("details-year").textContent = `${movie.movieYear}`;
+  const detailsGenre = document.getElementById("details-genre");
+  const detailsDirector = document.getElementById("details-director");
+  const detailsCast = document.getElementById("details-cast");
+  const detailsDescription = document.getElementById("details-description");
+  const detailsPoster = document.getElementById("details-poster");
+  detailsGenre.innerHTML = `<span class="bold">Genre:</span> ${movie.genres.join(
+    ", "
+  )}`;
+  detailsDirector.innerHTML = `<span class="bold">Director:</span> ${movie.director}`;
+  detailsCast.innerHTML = `<span class="bold">Cast:</span> ${movie.actors?.join(
+    ", "
+  )}`;
 
-    // Reset the scroll position to the top
-    movieDetails.scrollTop = 0;
-    // Set the movie title
-    document.getElementById("details-title").textContent = movie.title;
-    // Set the movie year
-    document.getElementById("details-year").textContent = `${movie.movieYear}`;
-    const detailsGenre = document.getElementById("details-genre");
-    const detailsDirector = document.getElementById("details-director");
-    const detailsCast = document.getElementById("details-cast");
-    const detailsDescription = document.getElementById("details-description");
-    const detailsPoster = document.getElementById("details-poster");
-    detailsGenre.innerHTML = `<span class="bold">Genre:</span> ${movie.genres.join(
-      ", "
-    )}`;
-    detailsDirector.innerHTML = `<span class="bold">Director:</span> ${movie.director}`;
-    detailsCast.innerHTML = `<span class="bold">Cast:</span> ${movie.actors?.join(
-      ", "
-    )}`;
+  detailsDescription.textContent = movie.description;
 
-    detailsDescription.textContent = movie.description;
+  detailsPoster.src = movie.poster_url;
 
-    detailsPoster.src = movie.poster_url;
+  commentForm.addEventListener("submit", (event) => {
+    commentsFunction(event);
+  });
 
-    // Set the genre(s) of the movie
+  // Display comments for the current movie ID
+  displayComments(currentMovieId);
+  displayRating(currentMovieId);
+};
 
-    //* COMMENTS SECTION
-    // Check if comments section already exists, if not create a new one
-    let commentsSection = document.getElementById("comments-section");
-    if (!commentsSection) {
-      commentsSection = document.createElement("div");
-      commentsSection.id = "comments-section";
-      movieDetails.append(commentsSection);
-    }
-    // Define the HTML structure for the comments section
-    commentsSection.innerHTML = ` <h3 id="comments-title">Leave a comment!</h3>
+/* Close the details window */
+const closeDetails = () => {
+  movieDetails.classList.remove("show");
+  removeDublicates();
+  saveRatings();
+};
+/* Close details when clicking outside the movie details panel */
+document.addEventListener("click", (event) => {
+  const clickedInsideDetails = movieDetails.contains(event.target);
+  const clickedOnCard = event.target.closest(".card");
+
+  if (!clickedInsideDetails && !clickedOnCard) {
+    closeDetails();
+  }
+});
+window.closeDetails = closeDetails;
+
+//* COMMENTS SECTION
+// Check if comments section already exists, if not create a new one
+let commentsSection = document.getElementById("comments-section");
+if (!commentsSection) {
+  commentsSection = document.createElement("div");
+  commentsSection.id = "comments-section";
+  movieDetails.append(commentsSection);
+}
+// Define the HTML structure for the comments section
+commentsSection.innerHTML = ` <h3 id="comments-title">Leave a comment!</h3>
         <form class="comment-form">
       <input type="text" placeholder="Your name" required>
       <textarea placeholder="Your comment" required></textarea>
@@ -286,123 +312,109 @@ const movieDetailsPanel = () => {
     </form>
     <div class="comment-display" id="comment-display"></div>`;
 
-    // Get references to the comment form, input fields, and comment display elements
-    const commentForm = commentsSection.querySelector(".comment-form");
-    const nameInput = commentForm.querySelector('input[type="text"]');
-    const commentInput = commentForm.querySelector("textarea");
-    const commentDisplay = commentsSection.querySelector("#comment-display");
+// Get references to the comment form, input fields, and comment display elements
+const commentForm = commentsSection.querySelector(".comment-form");
+const nameInput = commentForm.querySelector('input[type="text"]');
+const commentInput = commentForm.querySelector("textarea");
+const commentDisplay = commentsSection.querySelector("#comment-display");
 
-    // Function to display comments for a given movie ID
-    const displayComments = (movieId) => {
-      // Filter comments by movie ID and create HTML structure for comments
-      const comments = allComments.filter(
-        (comment) => comment.movieId === movieId
-      );
-      const commentHTML = comments
-        .map(
-          (comment) => `
-              <div class="comment">
-                <h4>${comment.userName}</h4>
-                <p>${comment.commentText}</p>
-                <p>${comment.date}</p>
-              </div>
-            `
-        )
-        .join("");
-      // Update the comment display element with the generated HTML
-      commentDisplay.innerHTML = commentHTML;
-    };
-
-    // Function to add a new comment
-    commentForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      // Get the user's name and comment from the input fields
-      const name = nameInput.value.trim();
-      const comment = commentInput.value.trim();
-      if (name && comment) {
-        // Add the comment to storage
-        addCommentToStorage(movie.id, movie.title, name, comment);
-        nameInput.value = "";
-        commentInput.value = "";
-        // Update the comment display with the new comment
-        displayComments(currentMovieId);
-      }
-    });
-    movieDetails.append(commentsSection);
-
-    // Display comments for the current movie ID
-    displayComments(currentMovieId);
-  };
-
-  /* Close the details window */
-  const closeDetails = () => movieDetails.classList.remove("show");
-
-  /* Close details when clicking outside the movie details panel */
-  document.addEventListener("click", (event) => {
-    const clickedInsideDetails = movieDetails.contains(event.target);
-    const clickedOnCard = event.target.closest(".card");
-
-    if (!clickedInsideDetails && !clickedOnCard) {
-      closeDetails();
-    }
-  });
-
-  // Return for the movieDetailsPanel()
-  return {
-    openDetails,
-    toggleDetails,
-    closeDetails,
-  };
+// Function to display comments for a given movie ID
+const displayComments = (currentMovieId) => {
+  // Filter comments by movie ID and create HTML structure for comments
+  const comments = allComments.filter(
+    (comment) => comment.movieId === currentMovieId
+  );
+  const commentHTML = comments
+    .map(
+      (comment) => `
+             <div class="comment">
+               <h4>${comment.userName}</h4>
+               <p>${comment.commentText}</p>
+               <p>${comment.date}</p>
+             </div>
+           `
+    )
+    .join("");
+  // Update the comment display element with the generated HTML
+  commentDisplay.innerHTML = commentHTML;
 };
-// In global scope, extracting the functions, assigning them to variables
-const { toggleDetails, closeDetails } = movieDetailsPanel();
-window.closeDetails = closeDetails;
 
-// Rating functions
-document.addEventListener("DOMContentLoaded", () => {
-  let stars = document.querySelectorAll(".star"); //Get all the star elements
-  let selectedRating = 0; // Keeps track of the selected rating
+// Function to add a new comment
+function commentsFunction(event) {
+  event.preventDefault();
+  // Get the user's name and comment from the input fields
+  const name = nameInput.value.trim();
+  const comment = commentInput.value.trim();
+  if (name && comment) {
+    // Add the comment to storage
+    addCommentToStorage(currentMovie.id, currentMovie.title, name, comment);
+    nameInput.value = "";
+    commentInput.value = "";
+    // Update the comment display with the new comment
+    displayComments(currentMovie.id);
+  }
+}
+movieDetails.append(commentsSection);
 
-  // Loops through each star to update its appearance based on the selected rating
-  const updateStarHighlight = (rating) => {
-    stars.forEach((star) =>
-      star.classList.toggle("active", star.dataset.value <= rating)
-    );
-  };
+//* RATING FUNCTIONS
 
-  stars.forEach((star) => {
-    star.addEventListener("click", (event) => {
-      const rating = event.currentTarget.dataset.value;
-      selectedRating = rating;
-      updateStarHighlight(rating);
-    });
-  });
-  /* Reset the star rating for a new movie card */
-  let cardContainer = document.getElementById("card-container");
-  cardContainer.addEventListener("click", (event) => {
-    let clickedCard =
-      event.target.closest(
-        ".card"
-      ); /* Check if the clicked element is inside a movie card */
-    if (clickedCard) {
-      selectedRating = 0;
-      updateStarHighlight(selectedRating); /* Clear the stars’ highlights */
-    }
+const stars = document.querySelectorAll(".star"); //Get all the star elements
+let selectedRating = 0; // Keeps track of the selected rating
+
+function displayRating(currentMovieId) {
+  const starRating = allRatings.find(
+    (rating) => rating.movieId === currentMovieId
+  );
+  if (starRating) {
+    selectedRating = starRating.rating;
+    updateStarHighlight(starRating.rating);
+  } else {
+    selectedRating = 0;
+    updateStarHighlight(0);
+  }
+}
+
+// Loops through each star to update its appearance based on the selected rating
+const updateStarHighlight = (rating) => {
+  stars.forEach((star) =>
+    star.classList.toggle("active", star.dataset.value <= rating)
+  );
+};
+
+stars.forEach((star) => {
+  star.addEventListener("click", (event) => {
+    const rating = event.currentTarget.dataset.value;
+    selectedRating = rating;
+    updateStarHighlight(rating);
+    updateRatingInStorage(currentMovie.id, rating);
   });
 });
 
-//*SEARCH FUNCTIONS
-let searchDiv = document.querySelector(".search");
-let searchInput = document.querySelector(".search .searchText");
-let searchResults = [];
-let searchDropdown = document.getElementById("search-dropdown");
+function updateRatingInStorage(movieId, rating) {
+  const existingRating = allRatings.find(
+    (rating) => rating.movieId === movieId
+  );
+  if (existingRating) {
+    existingRating.rating = rating;
+  } else {
+    addRatingToStorage(movieId, rating);
+  }
+  saveRatings();
+}
 
+//*SEARCH FUNCTIONS
+const searchDiv = document.querySelector(".search");
+const searchInput = document.querySelector(".search .searchText");
+let searchResults = [];
+const searchDropdown = document.getElementById("search-dropdown");
+
+//!INITIALIZED IN FETCH
 const searchFunction = () => {
   searchResults = [];
   const searchText = searchInput.value.trim().toLowerCase();
 
   // Hide the dropdown if the input is empty
-  if (searchText === "") {
+  if (!searchText) {
     searchDropdown.style.display = "none";
     return;
   }
@@ -415,23 +427,23 @@ const searchFunction = () => {
 
   // Create an HTML structure for displaying the results.
   searchResults.forEach((result) => {
-    let resultItem = document.createElement("div");
+    const resultItem = document.createElement("div");
     resultItem.classList.add("resultItem");
 
     // Create movie poster image
-    let resultPoster = document.createElement("img");
+    const resultPoster = document.createElement("img");
     resultPoster.classList.add("resultPoster");
     resultPoster.src = result.poster_url;
     resultItem.appendChild(resultPoster);
 
     // Create movie title
-    let resultTitle = document.createElement("span");
+    const resultTitle = document.createElement("span");
     resultTitle.classList.add("resultTitle");
     resultTitle.textContent = result.title;
     resultItem.appendChild(resultTitle);
 
     // Create release year
-    let resultYear = document.createElement("span");
+    const resultYear = document.createElement("span");
     resultYear.classList.add("resultYear");
     resultYear.textContent = result.movieYear;
     resultItem.appendChild(resultYear);
@@ -458,24 +470,24 @@ searchInput.addEventListener("input", () => {
 });
 
 //Show results when clicking
-searchInput.addEventListener("click", (e) => {
-  e.stopPropagation();
-  if (searchInput.value.trim() !== "") {
+searchInput.addEventListener("click", (event) => {
+  event.stopPropagation();
+  if (searchInput.value.trim()) {
     searchFunction();
     toggleSearchDropdown();
   }
 });
 
 //Hide results when clicking outside
-document.addEventListener("click", (e) => {
-  if (!searchDiv.contains(e.target)) {
+document.addEventListener("click", (event) => {
+  if (!searchDiv.contains(event.target)) {
     searchDropdown.style.display = "none";
   }
 });
 
 // Close the dropdown when clicking on a result
-searchDropdown.addEventListener("click", (e) => {
-  if (searchDropdown.contains(e.target)) {
+searchDropdown.addEventListener("click", (event) => {
+  if (searchDropdown.contains(event.target)) {
     searchDropdown.style.display = "none";
   }
 });
@@ -495,6 +507,7 @@ const highlightCard = (selectedCard) => {
 };
 
 //* TIMER SECTION
+let timerDropdown;
 let isGameActive = false;
 let selectedMovies = [];
 
@@ -505,7 +518,7 @@ const timerInteraction = () => {
   // On Page Timer
   const timerOnPage = () => {
     let timerOnPageCount = 0;
-    let formatedTimeOnPage = "00:00";
+    formatedTimeOnPage = "00:00";
 
     onPageTimer.innerHTML = `
           <h3>Time on page</h3>
@@ -516,8 +529,8 @@ const timerInteraction = () => {
     setInterval(() => {
       timerOnPageCount++;
       // Calculate seconds and minutes
-      let seconds = timerOnPageCount % 60;
-      let minutes = Math.floor(timerOnPageCount / 60);
+      const seconds = timerOnPageCount % 60;
+      const minutes = Math.floor(timerOnPageCount / 60);
 
       // Update formated time
       formatedTimeOnPage = `${minutes.toString().padStart(2, "0")}:${seconds
@@ -536,8 +549,8 @@ const timerInteraction = () => {
   document.addEventListener("DOMContentLoaded", timerOnPage);
 
   // Create timer dropdown menu and add event listeners to the timer button
-  let timerButton = document.getElementById("timer-button");
-  let menuBar = document.querySelector(".menu");
+  const timerButton = document.getElementById("timer-button");
+  const menuBar = document.querySelector(".menu");
 
   timerDropdown = document.createElement("div");
   timerDropdown.id = "timer-dropdown";
@@ -553,7 +566,7 @@ const timerInteraction = () => {
   });
 
   // Create interface for the timer dropdown
-  let timerInterface = document.createElement("div");
+  const timerInterface = document.createElement("div");
   timerInterface.id = "timer-interface";
   timerDropdown.appendChild(timerInterface);
 
@@ -565,7 +578,7 @@ const timerInteraction = () => {
   timerInterface.appendChild(onPageTimer);
 
   // Create the quick choice game button
-  let buttonGameTimer = document.createElement("div");
+  const buttonGameTimer = document.createElement("div");
   buttonGameTimer.id = "button-game-timer";
   buttonGameTimer.innerHTML = `
     <h3>Start quick choice game</h3>
@@ -580,7 +593,7 @@ const timerInteraction = () => {
   });
 
   // Create the game timer section
-  let gameTimerSection = document.createElement("div");
+  const gameTimerSection = document.createElement("div");
   gameTimerSection.id = "game-timer-section";
   gameTimerSection.innerHTML = `
     <div id="game-timer-bar">
@@ -589,34 +602,6 @@ const timerInteraction = () => {
     <div id="selected-movies-list"></div>
     <div id="final-result"></div>`;
   timerDropdown.appendChild(gameTimerSection);
-
-  // Game Timer
-  let countdownInterval;
-
-  const startGameTimer = (seconds) => {
-    isGameActive = true;
-    closeDetails();
-    selectedMovies = [];
-    document.getElementById("timer-progress").style.width = "100%";
-    document.getElementById("selected-movies-list").innerHTML = "";
-
-    let remainingSeconds = seconds;
-    countdownInterval = setInterval(() => {
-      // Reduce the remaining seconds by 0.1 each time
-      remainingSeconds = Math.round((remainingSeconds - 0.1) * 10) / 10;
-      // Update the progress bar
-      document.getElementById("timer-progress").style.width = `${
-        (remainingSeconds / seconds) * 100
-      }%`;
-
-      // End the game
-      if (remainingSeconds <= 0) {
-        document.getElementById("timer-progress").style.width = "0%";
-        clearInterval(countdownInterval);
-        endGame();
-      }
-    }, 100);
-  };
 };
 
 // Update the list of selected movies
@@ -635,6 +620,51 @@ const updateSelectedMoviesList = () => {
     .join("");
 };
 
+//* TIMER GAME SECTION
+const timerGameFunction = (event, movie) => {
+  //TimerGame selection logic
+  if (!selectedMovies.some((thisMovie) => thisMovie.id === movie.id)) {
+    selectedMovies.push(movie);
+    updateSelectedMoviesList();
+  }
+  const isTimerDropdownClicked = event.target.closest(".timer-dropdown");
+
+  if (!isTimerDropdownClicked && !bufferPeriodActive && !isGameActive) {
+    timerDropdown.style.display = "none";
+  }
+  //Prevent the details to open during the game
+  event.stopPropagation();
+};
+
+// Game Timer
+let countdownInterval;
+
+const startGameTimer = (seconds) => {
+  isGameActive = true;
+
+  closeDetails();
+  selectedMovies = [];
+  document.getElementById("timer-progress").style.width = "100%";
+  document.getElementById("selected-movies-list").innerHTML = "";
+
+  let remainingSeconds = seconds;
+  countdownInterval = setInterval(() => {
+    // Reduce the remaining seconds by 0.1 each time
+    remainingSeconds = Math.round((remainingSeconds - 0.1) * 10) / 10;
+    // Update the progress bar
+    document.getElementById("timer-progress").style.width = `${
+      (remainingSeconds / seconds) * 100
+    }%`;
+
+    // End the game
+    if (remainingSeconds <= 0) {
+      document.getElementById("timer-progress").style.width = "0%";
+      clearInterval(countdownInterval);
+      endGame();
+    }
+  }, 100);
+};
+
 const endGame = () => {
   isGameActive = false;
 
@@ -648,7 +678,7 @@ const endGame = () => {
 
   // If there are movies selected, display a random one
   if (selectedMovies.length > 0) {
-    let randomNum = Math.floor(selectedMovies.length * Math.random());
+    const randomNum = Math.floor(selectedMovies.length * Math.random());
     const randomMovie = selectedMovies[randomNum];
 
     // Add the title for the selected random movie
@@ -690,8 +720,8 @@ const goToMovie = (result) => {
     highlightCard(selectedCard);
 
     //Grid dimentions
-    const minX = Math.min(...movies.map((m) => m.coordinates.x));
-    const minY = Math.min(...movies.map((m) => m.coordinates.y));
+    const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
+    const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
 
     const gridColumn = result.coordinates.x - minX + 1;
     const gridRow = result.coordinates.y - minY + 1;
@@ -738,13 +768,12 @@ const screenDrag = () => {
 
   container.addEventListener("mousemove", (dragEvent) => {
     if (!isDragging) return;
-    const x = dragEvent.pageX - container.offsetLeft;
-    const y = dragEvent.pageY - container.offsetTop;
-    const walkX = (x - startX) * 1.5; // Dragging speed + Multiplier
-    const walkY = (y - startY) * 1.5; // Dragging speed + Multiplier
+    const xCoord = dragEvent.pageX - container.offsetLeft;
+    const yCoord = dragEvent.pageY - container.offsetTop;
+    const walkX = (xCoord - startX) * 1.5; // Dragging speed + Multiplier
+    const walkY = (yCoord - startY) * 1.5; // Dragging speed + Multiplier
     container.scrollLeft = scrollLeft - walkX;
     container.scrollTop = scrollTop - walkY;
   });
 };
-displayMoviesGrid();
 screenDrag();
