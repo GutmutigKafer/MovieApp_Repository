@@ -32,6 +32,8 @@ const initializeMoviesFunctions = () => {
 
 fetchMoviesData();
 
+const isMobileScreen = () => window.matchMedia("(max-width: 1024px)").matches;
+
 //* SWITCH VIEW FUNCTION
 let currentView = "grid";
 const gridButton = document.getElementById("grid-button");
@@ -137,6 +139,27 @@ const toggleGenreFilter = (genre) => {
   }
 };
 
+const filterSection = document.querySelector(".filter-section");
+const filterToggle = document.querySelector(".filter-toggle");
+
+if (isMobileScreen()) {
+  filterSection.style.overflow = "hidden"; // Contain the scroll
+  const genreFilters = document.getElementById("genre-filters");
+  genreFilters.style.overflowY = "auto";
+  genreFilters.style.height = "100%";
+
+  filterToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    filterSection.classList.toggle("active");
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!filterSection.contains(event.target)) {
+      filterSection.classList.remove("active");
+    }
+  });
+}
+
 //* MOVIE LIST
 //!INITIALIZED IN FETCH
 const renderMovieList = () => {
@@ -156,7 +179,8 @@ const renderMovieList = () => {
         <div class="movie-item">
       <img src="${movie.poster_url}" alt="${movie.title}">
       <div>
-        <h3>${movie.title} (${movie.movieYear})</h3>
+        <h3>${movie.title}</h3>
+        <p class="movie-year">${movie.movieYear}</p>
         <div class="genre-list">
           ${movie.genres
             .map(
@@ -166,7 +190,7 @@ const renderMovieList = () => {
             )
             .join("")}
         </div>
-        <p>${movie.description.slice(0, 150)}...</p>
+        <p>${movie.description}</p>
       </div>
     </div>`
     )
@@ -180,19 +204,9 @@ let bufferPeriodActive = false;
 const displayMoviesGrid = () => {
   const cardContainer = document.getElementById("card-container");
 
-  // Calculating grid dimensions, depending on the min/max coordinate values
+  // Get min X and Y values
   const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
-  const maxX = Math.max(...movies.map((movie) => movie.coordinates.x));
   const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
-  const maxY = Math.max(...movies.map((movie) => movie.coordinates.y));
-
-  //Seting grid size
-  const gridWidth = maxX - minX + 1;
-  const gridHeight = maxY - minY + 1;
-
-  // Applying CSS Grid to the cardContainer
-  cardContainer.style.gridTemplateColumns = `repeat(${gridWidth}, 400px)`;
-  cardContainer.style.gridTemplateRows = `repeat(${gridHeight}, 620px)`;
 
   // Create movie cards
   movies.forEach((movie) => {
@@ -619,9 +633,20 @@ const timerGameFunction = (event, movie) => {
   }
   const isTimerDropdownClicked = event.target.closest(".timer-dropdown");
 
-  if (!isTimerDropdownClicked && !bufferPeriodActive && !isGameActive) {
+  if (isMobileScreen()) {
+    if (isGameActive) {
+      timerDropdown.classList.add("hidden");
+    }
+  }
+  if (
+    !isMobileScreen() &&
+    !isTimerDropdownClicked &&
+    !bufferPeriodActive &&
+    !isGameActive
+  ) {
     timerDropdown.style.display = "none";
   }
+
   //Prevent the details to open during the game
   event.stopPropagation();
 };
@@ -631,6 +656,9 @@ const timerGameFunction = (event, movie) => {
 const startGameTimer = (seconds) => {
   isGameActive = true;
 
+  if (isMobileScreen()) {
+    timerDropdown.classList.add("hidden");
+  }
   closeDetails();
   selectedMovies = [];
   document.getElementById("timer-progress").style.width = "100%";
@@ -656,6 +684,10 @@ const startGameTimer = (seconds) => {
 // End Game Timer
 const endGame = () => {
   isGameActive = false;
+
+  if (isMobileScreen()) {
+    timerDropdown.classList.remove("hidden");
+  }
 
   // Run a buffer period, so the dropdown doesn't axidently close on click
   bufferPeriodActive = true;
@@ -697,6 +729,10 @@ const endGame = () => {
 const goToMovie = (result) => {
   const container = document.getElementById("card-container");
 
+  if (isMobileScreen()) {
+    timerDropdown.classList.add("hidden");
+  }
+
   const selectedCard = [...container.children].find(
     (card) =>
       card.querySelector("h2").textContent.trim() === result.title.trim()
@@ -706,6 +742,12 @@ const goToMovie = (result) => {
     // Highlight the card
     highlightCard(selectedCard);
 
+    // Get the parameters of the cards and the container
+    const cardWidth = selectedCard.offsetWidth;
+    const cardHeight = selectedCard.offsetHeight;
+    const columnGap = parseFloat(getComputedStyle(container).columnGap);
+    const rowGap = parseFloat(getComputedStyle(container).rowGap);
+
     //Grid dimentions
     const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
     const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
@@ -714,11 +756,6 @@ const goToMovie = (result) => {
     const gridRow = result.coordinates.y - minY + 1;
 
     // Calculate the x and y coordinates of the card in the window
-    const cardWidth = 380;
-    const cardHeight = 620;
-    const columnGap = 20;
-    const rowGap = 30;
-
     const cardX = (gridColumn - 1) * (cardWidth + columnGap);
     const cardY = (gridRow - 1) * (cardHeight + rowGap);
 
