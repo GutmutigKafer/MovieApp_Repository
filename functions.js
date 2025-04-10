@@ -32,6 +32,8 @@ const initializeMoviesFunctions = () => {
 
 fetchMoviesData();
 
+const isMobileScreen = () => window.matchMedia("(max-width: 1024px)").matches;
+
 //* SWITCH VIEW FUNCTION
 let currentView = "grid";
 const gridButton = document.getElementById("grid-button");
@@ -137,6 +139,27 @@ const toggleGenreFilter = (genre) => {
   }
 };
 
+const filterSection = document.querySelector(".filter-section");
+const filterToggle = document.querySelector(".filter-toggle");
+
+if (isMobileScreen()) {
+  filterSection.style.overflow = "hidden"; // Contain the scroll
+  const genreFilters = document.getElementById("genre-filters");
+  genreFilters.style.overflowY = "auto";
+  genreFilters.style.height = "100%";
+
+  filterToggle.addEventListener("click", (event) => {
+    event.stopPropagation();
+    filterSection.classList.toggle("active");
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!filterSection.contains(event.target)) {
+      filterSection.classList.remove("active");
+    }
+  });
+}
+
 //* MOVIE LIST
 //!INITIALIZED IN FETCH
 const renderMovieList = () => {
@@ -153,10 +176,11 @@ const renderMovieList = () => {
   movieListContainer.innerHTML = filteredMovies
     .map(
       (movie) => `
-        <div class="movie-item">
+        <div class="movie-item" data-movie-id="${movie.id}">
       <img src="${movie.poster_url}" alt="${movie.title}">
       <div>
-        <h3>${movie.title} (${movie.movieYear})</h3>
+        <h2>${movie.title}</h2>
+        <p class="movie-year">${movie.movieYear}</p>
         <div class="genre-list">
           ${movie.genres
             .map(
@@ -166,11 +190,26 @@ const renderMovieList = () => {
             )
             .join("")}
         </div>
-        <p>${movie.description.slice(0, 150)}...</p>
+        <p>${movie.description}</p>
       </div>
     </div>`
     )
     .join("");
+
+  document.querySelectorAll(".movie-item").forEach((movieItem) => {
+    movieItem.addEventListener("click", (event) => {
+      const movieId = movieItem.dataset.movieId;
+
+      const numericMovieId = Number(movieId);
+      const thisMovie = movies.find((movie) => movie.id === numericMovieId);
+
+      if (isGameActive) {
+        timerGameFunction(event, thisMovie);
+      } else {
+        toggleDetails(thisMovie);
+      }
+    });
+  });
 };
 
 // Prevent closing the Timer Game right after it ends
@@ -180,19 +219,9 @@ let bufferPeriodActive = false;
 const displayMoviesGrid = () => {
   const cardContainer = document.getElementById("card-container");
 
-  // Calculating grid dimensions, depending on the min/max coordinate values
+  // Get min X and Y values
   const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
-  const maxX = Math.max(...movies.map((movie) => movie.coordinates.x));
   const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
-  const maxY = Math.max(...movies.map((movie) => movie.coordinates.y));
-
-  //Seting grid size
-  const gridWidth = maxX - minX + 1;
-  const gridHeight = maxY - minY + 1;
-
-  // Applying CSS Grid to the cardContainer
-  cardContainer.style.gridTemplateColumns = `repeat(${gridWidth}, 400px)`;
-  cardContainer.style.gridTemplateRows = `repeat(${gridHeight}, 620px)`;
 
   // Create movie cards
   movies.forEach((movie) => {
@@ -613,17 +642,24 @@ const updateSelectedMoviesList = () => {
 //* TIMER GAME SECTION
 const timerGameFunction = (event, movie) => {
   //TimerGame selection logic
-  if (!selectedMovies.some((thisMovie) => thisMovie.id === movie.id)) {
+  if (!selectedMovies.some((thisMovie) => thisMovie?.id === movie.id)) {
     selectedMovies.push(movie);
     updateSelectedMoviesList();
   }
-  const isTimerDropdownClicked = event.target.closest(".timer-dropdown");
-
-  if (!isTimerDropdownClicked && !bufferPeriodActive && !isGameActive) {
-    timerDropdown.style.display = "none";
+  // Handle dropdown visibility based on view
+  if (currentView === "grid") {
+    const isTimerDropdownClicked = event.target.closest(".timer-dropdown");
+    if (!isTimerDropdownClicked && !bufferPeriodActive && !isGameActive) {
+      timerDropdown.style.display = "none";
+    }
   }
-  //Prevent the details to open during the game
+  if (isMobileScreen() && isGameActive) {
+    timerDropdown.classList.add("hidden");
+  }
+
+  // Prevent details opening in both views
   event.stopPropagation();
+  event.preventDefault();
 };
 
 // Start Game Timer
@@ -631,6 +667,9 @@ const timerGameFunction = (event, movie) => {
 const startGameTimer = (seconds) => {
   isGameActive = true;
 
+  if (isMobileScreen()) {
+    timerDropdown.classList.add("hidden");
+  }
   closeDetails();
   selectedMovies = [];
   document.getElementById("timer-progress").style.width = "100%";
@@ -657,6 +696,10 @@ const startGameTimer = (seconds) => {
 const endGame = () => {
   isGameActive = false;
 
+  if (isMobileScreen()) {
+    timerDropdown.classList.remove("hidden");
+  }
+
   // Run a buffer period, so the dropdown doesn't axidently close on click
   bufferPeriodActive = true;
   setTimeout(() => (bufferPeriodActive = false), 3000);
@@ -665,37 +708,48 @@ const endGame = () => {
   const resultContainer = document.getElementById("final-result");
   resultContainer.innerHTML = "";
 
+  if (selectedMovies.length === 0) {
+    resultContainer.innerHTML = "<p>No movies selected!</p>";
+    return;
+  }
+
   // If there are movies selected, display a random one
-  if (selectedMovies.length > 0) {
-    const randomNum = Math.floor(selectedMovies.length * Math.random());
-    const randomMovie = selectedMovies[randomNum];
 
-    // Add the title for the selected random movie
-    const resultTitle = document.createElement("h3");
-    resultTitle.innerHTML = "Movie for tonight";
-    resultContainer.appendChild(resultTitle);
+  const randomNum = Math.floor(Math.random() * selectedMovies.length);
+  const randomMovie = selectedMovies[randomNum];
 
-    // Create a container for the random movie result
-    const movieResultContainer = document.createElement("div");
-    movieResultContainer.classList.add("selected-movie-item");
-    movieResultContainer.id = "timer-result";
-    movieResultContainer.innerHTML = `
+  // Add the title for the selected random movie
+  const resultTitle = document.createElement("h3");
+  resultTitle.innerHTML = "Movie for tonight";
+  resultContainer.appendChild(resultTitle);
+
+  // Create a container for the random movie result
+  const movieResultContainer = document.createElement("div");
+  movieResultContainer.classList.add("selected-movie-item");
+  movieResultContainer.id = "timer-result";
+  movieResultContainer.innerHTML = `
         <img src="${randomMovie.poster_url}" alt="${randomMovie.title}">
          <span>${randomMovie.title}</span>
          <span>${randomMovie.ratingIMDB}</span>
          </div>
         `;
-    resultContainer.appendChild(movieResultContainer);
+  resultContainer.appendChild(movieResultContainer);
 
-    // Add click event to navigate to the selected movie
-    movieResultContainer.addEventListener("click", () => {
-      goToMovie(randomMovie);
-    });
-  }
+  // Add click event to navigate to the selected movie
+  movieResultContainer.addEventListener("click", () => {
+    goToMovie(randomMovie);
+  });
 };
 
 const goToMovie = (result) => {
-  const container = document.getElementById("card-container");
+  const container =
+    currentView === "grid"
+      ? document.getElementById("card-container")
+      : document.getElementById("movie-list-items");
+
+  if (isMobileScreen()) {
+    timerDropdown.classList.add("hidden");
+  }
 
   const selectedCard = [...container.children].find(
     (card) =>
@@ -706,31 +760,46 @@ const goToMovie = (result) => {
     // Highlight the card
     highlightCard(selectedCard);
 
-    //Grid dimentions
-    const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
-    const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
+    if (currentView === "grid") {
+      // Get the parameters of the cards and the container
+      const cardWidth = selectedCard.offsetWidth;
+      const cardHeight = selectedCard.offsetHeight;
+      const columnGap = parseFloat(getComputedStyle(container).columnGap);
+      const rowGap = parseFloat(getComputedStyle(container).rowGap);
 
-    const gridColumn = result.coordinates.x - minX + 1;
-    const gridRow = result.coordinates.y - minY + 1;
+      //Grid dimentions
+      const minX = Math.min(...movies.map((movie) => movie.coordinates.x));
+      const minY = Math.min(...movies.map((movie) => movie.coordinates.y));
 
-    // Calculate the x and y coordinates of the card in the window
-    const cardWidth = 380;
-    const cardHeight = 620;
-    const columnGap = 20;
-    const rowGap = 30;
+      const gridColumn = result.coordinates.x - minX + 1;
+      const gridRow = result.coordinates.y - minY + 1;
 
-    const cardX = (gridColumn - 1) * (cardWidth + columnGap);
-    const cardY = (gridRow - 1) * (cardHeight + rowGap);
+      // Calculate the x and y coordinates of the card in the window
+      const cardX = (gridColumn - 1) * (cardWidth + columnGap);
+      const cardY = (gridRow - 1) * (cardHeight + rowGap);
 
-    const centerX = cardX + cardWidth / 2 - window.innerWidth / 2;
-    const centerY = cardY + cardHeight / 2 - window.innerHeight / 2;
+      const centerX = cardX + cardWidth / 2 - window.innerWidth / 2;
+      const centerY = cardY + cardHeight / 2 - window.innerHeight / 2.5;
 
-    // Scroll to the card
-    container.scrollTo({
-      left: centerX,
-      top: centerY,
-      behavior: "smooth",
-    });
+      // Scroll to the card
+      container.scrollTo({
+        left: centerX,
+        top: centerY,
+        behavior: "smooth",
+      });
+    } else {
+      const containerRect = container.getBoundingClientRect();
+      const cardRect = selectedCard.getBoundingClientRect();
+      const scrollTop = cardRect.top - containerRect.top + container.scrollTop;
+      const centerOffset =
+        scrollTop - container.clientHeight / 2 + selectedCard.offsetHeight / 2;
+
+      container.scrollTo({
+        top: centerOffset,
+        left: 0,
+        behavior: "smooth",
+      });
+    }
   }
 };
 
