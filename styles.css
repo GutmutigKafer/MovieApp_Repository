@@ -963,8 +963,8 @@ body {
 
   #card-container {
     grid-gap: 23px 15px;
-    padding: 150px 83px 75px 23px;
-    margin-bottom: 200px;
+    padding: 130px 83px 150px 23px;
+    height: 80%;
     grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
   }
 

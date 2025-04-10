@@ -779,7 +779,7 @@ const goToMovie = (result) => {
       const cardY = (gridRow - 1) * (cardHeight + rowGap);
 
       const centerX = cardX + cardWidth / 2 - window.innerWidth / 2;
-      const centerY = cardY + cardHeight / 2 - window.innerHeight / 2;
+      const centerY = cardY + cardHeight / 2 - window.innerHeight / 2.5;
 
       // Scroll to the card
       container.scrollTo({
